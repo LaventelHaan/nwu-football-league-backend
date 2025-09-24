@@ -36,6 +36,10 @@ export default function StandingsPage() {
 	const [standings, setStandings] = useState([]);
 	const [loading, setLoading] = useState(true);
 	const [error, setError] = useState("");
+<<<<<<< HEAD
+=======
+	const [seasonName, setSeasonName] = useState("");
+>>>>>>> 5954b63 (Initializing physical folder)
 	
 	useEffect(() => {
   // Start fetching data when the component mounts
@@ -63,6 +67,19 @@ export default function StandingsPage() {
     })
     .catch((err) => {
       console.error("Failed to fetch standings:", err);
+<<<<<<< HEAD
+=======
+      setError("Failed to load standings");
+
+    });
+	
+	fetch("http://localhost:4000/api/seasons/current")
+    .then((res) => res.json())
+    .then((season) => setSeasonName(season.name))
+    .catch((err) => {
+      console.error("Failed to fetch season:", err);
+      setSeasonName("Season");
+>>>>>>> 5954b63 (Initializing physical folder)
     });
 	}, []);
 	
@@ -84,6 +101,7 @@ export default function StandingsPage() {
                 <div>
                   <h1 className="text-2xl font-bold">League Standings</h1>
                   <p className="text-primary-foreground/80">2024 University Sports League</p>
+
                 </div>
               </div>
             </div>

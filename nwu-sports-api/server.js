@@ -1,6 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import router from './routes/teamsRoute.js';
+import seasonsRoute from './routes/seasonsRoute.js';
+>>>>>>> 5954b63 (Initializing physical folder)
 
 const app = express();
 const PORT = 4000;
@@ -10,6 +12,8 @@ app.use(cors());
 
 // Parse incoming JSON requests
 app.use(express.json());
+
+app.use('/api/seasons', seasonsRoute);
 
 // Mount teams-related routes
 app.use('/api/standings', router);
