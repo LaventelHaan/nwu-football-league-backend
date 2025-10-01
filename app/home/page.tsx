@@ -1,0 +1,626 @@
+"use client"
+
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
+import { MessageSquare } from "lucide-react"
+import {
+  Trophy,
+  Calendar,
+  Users,
+  Play,
+  ImageIcon,
+  Mail,
+  Phone,
+  MapPin,
+  Facebook,
+  Twitter,
+  Instagram,
+  Youtube,
+  Star,
+  Award,
+  Target,
+  Clock,
+  Zap,
+} from "lucide-react"
+import Link from "next/link"
+import { useState, useEffect } from "react"
+import TeamOfTheWeek from "@/components/ui/TeamOfTheWeek"
+import NavigationBar from "@/components/ui/navigation-bar"
+
+//import { mockPlayers, mockFixtures, mockHomeData, mockTeamOfTheWeek } from "@/lib/mockData"
+import { mockNews,mockTopScorers,mockStandings,mockHomeData,mockFixtures, mockTeamOfTheWeek } from "@/lib/mockData" 
+const getAutomaticLiveMatches = (fixtures: any[]) => {
+  const now = new Date()
+  const currentTime = now.getTime()
+
+  console.log("[v0] Current time:", now.toLocaleString())
+
+  return fixtures
+    .map((fixture) => {
+      // Parse fixture date and time
+      const fixtureDateTime = new Date(`${fixture.date}T${fixture.time}:00`)
+      const fixtureEndTime = new Date(fixtureDateTime.getTime() + fixture.duration * 60 * 1000)
+
+      const fixtureStartTime = fixtureDateTime.getTime()
+      const fixtureEndTimeMs = fixtureEndTime.getTime()
+
+      console.log(`[v0] Checking fixture ${fixture.homeTeam} vs ${fixture.awayTeam}:`)
+      console.log(`[v0] - Start: ${fixtureDateTime.toLocaleString()}`)
+      console.log(`[v0] - End: ${fixtureEndTime.toLocaleString()}`)
+      console.log(`[v0] - Is Live: ${currentTime >= fixtureStartTime && currentTime <= fixtureEndTimeMs}`)
+
+      // Check if match should be live
+      if (currentTime >= fixtureStartTime && currentTime <= fixtureEndTimeMs) {
+        const elapsedMinutes = Math.floor((currentTime - fixtureStartTime) / (1000 * 60))
+
+        return {
+          ...fixture,
+          id: fixture.id,
+          homeScore: Math.floor(Math.random() * 4), // Mock dynamic scores
+          awayScore: Math.floor(Math.random() * 4),
+          minute: Math.min(elapsedMinutes, fixture.duration),
+          status: "live",
+          events: {
+            corners: {
+              home: Math.floor(Math.random() * 8),
+              away: Math.floor(Math.random() * 8),
+            },
+            yellowCards: {
+              home: Math.floor(Math.random() * 4),
+              away: Math.floor(Math.random() * 4),
+            },
+            redCards: {
+              home: Math.floor(Math.random() * 2),
+              away: Math.floor(Math.random() * 2),
+            },
+          },
+        }
+      }
+
+      return null
+    })
+    .filter(Boolean) // Remove null values
+}
+
+export default function HomePage() {
+  const [liveMatches, setLiveMatches] = useState<any[]>([])
+
+  useEffect(() => {
+    const updateLiveMatches = () => {
+      const currentLiveMatches = getAutomaticLiveMatches(mockFixtures)
+      setLiveMatches(currentLiveMatches)
+      console.log("[v0] Updated live matches:", currentLiveMatches.length, "matches currently live")
+    }
+
+    // Initial update
+    updateLiveMatches()
+
+    // Update every minute
+    const interval = setInterval(updateLiveMatches, 60000)
+
+    return () => clearInterval(interval)
+  }, [])
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-background via-muted/5 to-background">
+      {/* Background pattern overlay */}
+      <div className="fixed inset-0 bg-grid-pattern opacity-[0.02] pointer-events-none"></div>
+
+      {/* Navigation Bar */}
+      <NavigationBar />
+
+      <header className="relative bg-gradient-to-r from-primary via-primary/95 to-primary/90 text-primary-foreground shadow-lg">
+        <div className="container mx-auto px-6">
+          <div className="flex items-center justify-center py-6">
+            <div className="flex items-center space-x-6">
+              <div className="bg-primary-foreground/10 backdrop-blur-sm rounded-xl p-3">
+                <div className="text-3xl font-black text-primary-foreground">NWU</div>
+              </div>
+              <div>
+                <h1 className="text-3xl font-bold text-balance">Sports League Manager</h1>
+                <p className="text-primary-foreground/90 text-lg font-medium">
+                  Your Gateway to University Sports Excellence
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </header>
+
+      <main className="relative container mx-auto px-6 py-12 space-y-16">
+        {/* Hero Section */}
+        <section>
+          <div className="relative overflow-hidden bg-gradient-to-br from-primary/8 via-accent/5 to-primary/12 rounded-3xl p-12 text-center shadow-xl border border-primary/10 backdrop-blur-sm">
+            <div className="absolute inset-0 bg-grid-pattern opacity-10"></div>
+            <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-accent/5"></div>
+            <div className="relative z-10">
+              <div className="flex justify-center mb-6">
+                <div className="bg-primary/15 backdrop-blur-sm rounded-full p-6 shadow-lg">
+                  <Trophy className="w-16 h-16 text-primary" />
+                </div>
+              </div>
+              <h2 className="text-5xl font-bold text-foreground mb-6 text-balance">Welcome to NWU Sports</h2>
+              <p className="text-xl text-muted-foreground mb-8 max-w-2xl mx-auto text-pretty leading-relaxed">
+                Experience the thrill of university sports with comprehensive league management, real-time statistics,
+                and exclusive content from South Africa's premier athletic competition.
+              </p>
+              <div className="flex flex-col sm:flex-row justify-center gap-4">
+                <Button
+                  size="lg"
+                  className="font-semibold shadow-lg hover:shadow-xl transition-all duration-300 bg-primary hover:bg-primary/90"
+                  asChild
+                >
+                  <Link href="/standings">
+                    <Trophy className="w-5 h-5 mr-2" />
+                    View League Standings
+                  </Link>
+                </Button>
+                <Button
+                  variant="outline"
+                  size="lg"
+                  className="font-semibold bg-background/80 backdrop-blur-sm hover:bg-background shadow-lg hover:shadow-xl transition-all duration-300 border-primary/20"
+                  asChild
+                >
+                  <Link href="/fixtures">
+                    <Calendar className="w-5 h-5 mr-2" />
+                    Upcoming Matches
+                  </Link>
+                </Button>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {liveMatches.length > 0 && (
+          <section>
+            <div className="text-center mb-8">
+              <div className="flex items-center justify-center space-x-3 mb-3">
+                <div className="bg-red-500/15 backdrop-blur-sm rounded-lg p-2 animate-pulse">
+                  <Zap className="w-6 h-6 text-red-500" />
+                </div>
+                <h2 className="text-3xl font-bold text-foreground">Live Scores</h2>
+                <Badge variant="destructive" className="animate-pulse font-semibold">
+                  LIVE
+                </Badge>
+              </div>
+              <p className="text-muted-foreground text-lg">
+                {liveMatches.length} match{liveMatches.length !== 1 ? "es" : ""} currently in progress
+              </p>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {liveMatches.map((match) => (
+                <Card
+                  key={match.id}
+                  className="shadow-xl border-2 border-red-500/20 bg-gradient-to-br from-background/95 via-red-50/10 to-background/95 backdrop-blur-sm relative overflow-hidden"
+                >
+                  {/* Live indicator animation */}
+                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-500 via-red-400 to-red-500 animate-pulse"></div>
+
+                  <CardHeader className="pb-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                        <span className="font-bold text-red-500">LIVE</span>
+                      </div>
+                      <div className="flex items-center space-x-2 text-muted-foreground">
+                        <Clock className="w-4 h-4" />
+                        <span className="font-semibold">
+                          {match.minute >= match.duration ? `${match.duration}' FT` : `${match.minute}'`}
+                        </span>
+                      </div>
+                    </div>
+                  </CardHeader>
+
+                  <CardContent className="space-y-6">
+                    {/* Score Display */}
+                    <div className="bg-gradient-to-r from-muted/20 via-muted/10 to-muted/20 border border-muted/30 rounded-xl p-6 backdrop-blur-sm">
+                      <div className="flex justify-between items-center">
+                        <div className="text-center flex-1">
+                          <div className="font-bold text-lg mb-2">{match.homeTeam}</div>
+                          <div className="text-4xl font-black text-primary">{match.homeScore}</div>
+                        </div>
+                        <div className="text-muted-foreground font-bold text-2xl mx-6">-</div>
+                        <div className="text-center flex-1">
+                          <div className="font-bold text-lg mb-2">{match.awayTeam}</div>
+                          <div className="text-4xl font-black text-primary">{match.awayScore}</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Match Stats */}
+                    <div className="grid grid-cols-3 gap-4 text-center">
+                      <div className="bg-background/60 backdrop-blur-sm rounded-lg p-3 border border-muted/20">
+                        <div className="text-sm text-muted-foreground mb-1">Corners</div>
+                        <div className="font-bold text-lg">
+                          {match.events.corners.home} - {match.events.corners.away}
+                        </div>
+                      </div>
+                      <div className="bg-background/60 backdrop-blur-sm rounded-lg p-3 border border-muted/20">
+                        <div className="text-sm text-muted-foreground mb-1">Yellow Cards</div>
+                        <div className="font-bold text-lg text-yellow-500">
+                          {match.events.yellowCards.home} - {match.events.yellowCards.away}
+                        </div>
+                      </div>
+                      <div className="bg-background/60 backdrop-blur-sm rounded-lg p-3 border border-muted/20">
+                        <div className="text-sm text-muted-foreground mb-1">Red Cards</div>
+                        <div className="font-bold text-lg text-red-500">
+                          {match.events.redCards.home} - {match.events.redCards.away}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Venue */}
+                    <div className="text-center text-muted-foreground font-medium">
+                      <MapPin className="w-4 h-4 inline mr-1" />
+                      {match.venue}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </section>
+        )}
+
+
+        {/* Team of the Week Section */}
+        <TeamOfTheWeek team={mockTeamOfTheWeek} />
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Featured Matches */}
+          <div className="lg:col-span-2">
+            <Card className="shadow-xl border-0 bg-gradient-to-br from-background/95 via-muted/8 to-background/95 backdrop-blur-sm">
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center space-x-3 text-xl">
+                  <div className="bg-primary/15 backdrop-blur-sm rounded-lg p-2">
+                    <Calendar className="w-5 h-5 text-primary" />
+                  </div>
+                  <span>Featured Matches</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-6">
+                {mockHomeData.allFixtures.map((match) => (
+                  <div
+                    key={match.id}
+                    className="bg-gradient-to-r from-muted/20 via-muted/10 to-muted/20 border border-muted/30 rounded-xl p-6 hover:shadow-lg hover:bg-gradient-to-r hover:from-muted/30 hover:via-muted/15 hover:to-muted/30 transition-all duration-300 backdrop-blur-sm"
+                  >
+                    <div className="flex justify-between items-center mb-4">
+                      <div className="flex items-center space-x-8">
+                        <div className="text-center">
+                          <div className="font-bold text-lg mb-1">{match.homeTeam}</div>
+                          {match.status === "final" && (
+                            <div className="text-3xl font-black text-primary">{match.homeScore}</div>
+                          )}
+                        </div>
+                        <div className="text-muted-foreground font-semibold text-lg">VS</div>
+                        <div className="text-center">
+                          <div className="font-bold text-lg mb-1">{match.awayTeam}</div>
+                          {match.status === "final" && (
+                            <div className="text-3xl font-black text-primary">{match.awayScore}</div>
+                          )}
+                        </div>
+                      </div>
+                      <Badge
+                        variant={match.status === "final" ? "secondary" : "default"}
+                        className="font-semibold px-4 py-2"
+                      >
+                        {match.status === "final" ? "Final" : "Upcoming"}
+                      </Badge>
+                    </div>
+                    <div className="text-muted-foreground font-medium">
+                      {match.date} • {match.time} • {match.venue}
+                    </div>
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* League Standings */}
+          <div>
+            <Card className="shadow-xl border-0 bg-gradient-to-br from-background/95 via-muted/8 to-background/95 backdrop-blur-sm">
+              <CardHeader className="pb-4">
+                <CardTitle className="flex items-center space-x-3 text-xl">
+                  <div className="bg-primary/15 backdrop-blur-sm rounded-lg p-2">
+                    <Trophy className="w-5 h-5 text-primary" />
+                  </div>
+                  <span>League Standings</span>
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {mockStandings.map((team) => (
+                    <div
+                      key={team.position}
+                      className="flex justify-between items-center p-3 rounded-lg hover:bg-muted/20 transition-colors duration-300 backdrop-blur-sm"
+                    >
+                      <div className="flex items-center space-x-4">
+                        <div className="w-8 h-8 bg-gradient-to-br from-primary to-primary/80 text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold shadow-sm">
+                          {team.position}
+                        </div>
+                        <div>
+                          <div className="font-bold text-base">{team.name}</div>
+
+                          <div className="text-sm text-muted-foreground font-medium">
+                            {team.wins}W • {team.draws}D • {team.losses}L
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="font-black text-xl text-primary">{team.points}</div>
+                        <div className="text-xs text-muted-foreground font-medium">points</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Top Scorers */}
+          <Card className="shadow-xl border-0 bg-gradient-to-br from-background/95 via-muted/8 to-background/95 backdrop-blur-sm">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center space-x-3 text-xl">
+                <div className="bg-primary/15 backdrop-blur-sm rounded-lg p-2">
+                  <Target className="w-5 h-5 text-primary" />
+                </div>
+                <span>Top Scorers</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {mockTopScorers.map((player, index) => (
+                  <div
+                    key={index}
+                    className="flex justify-between items-center p-3 rounded-lg hover:bg-muted/20 transition-colors duration-300 backdrop-blur-sm"
+                  >
+                    <div className="flex items-center space-x-4">
+                      <div className="w-8 h-8 bg-gradient-to-br from-accent to-accent/80 text-accent-foreground rounded-full flex items-center justify-center text-sm font-bold shadow-sm">
+                        {index + 1}
+                      </div>
+                      <div>
+                        <div className="font-bold text-base">{player.name}</div>
+                        <div className="text-sm text-muted-foreground font-medium">{player.team}</div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-black text-xl text-primary">{player.goals}</div>
+                      <div className="text-xs text-muted-foreground font-medium">goals</div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Latest News */}
+          <Card className="shadow-xl border-0 bg-gradient-to-br from-background/95 via-muted/8 to-background/95 backdrop-blur-sm">
+            <CardHeader className="pb-4">
+              <CardTitle className="flex items-center space-x-3 text-xl">
+                <div className="bg-primary/15 backdrop-blur-sm rounded-lg p-2">
+                  <Users className="w-5 h-5 text-primary" />
+                </div>
+                <span>Latest News</span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-6">
+                {mockNews.map((article) => (
+                  <div key={article.id} className="border-b border-muted/30 pb-6 last:border-b-0 last:pb-0">
+                    <h3 className="font-bold text-lg mb-3 text-balance hover:text-primary transition-colors duration-300 cursor-pointer">
+                      {article.title}
+                    </h3>
+                    <p className="text-muted-foreground mb-3 text-pretty leading-relaxed">{article.excerpt}</p>
+                    <div className="text-sm text-muted-foreground font-medium">{article.date}</div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </main>
+
+
+      <footer className="relative bg-gradient-to-br from-muted/90 via-muted/80 to-muted/90 mt-20 border-t border-muted/50 backdrop-blur-sm">
+        <div className="absolute inset-0 bg-grid-pattern opacity-5"></div>
+        <div className="relative container mx-auto px-6 py-16">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
+            {/* League Information */}
+            <div>
+              <div className="flex items-center space-x-3 mb-6">
+                <div className="bg-primary rounded-xl p-3 shadow-lg">
+                  <div className="text-2xl font-black text-primary-foreground">NWU</div>
+                </div>
+                <div className="text-xl font-bold">Sports League</div>
+              </div>
+              <p className="text-muted-foreground mb-6 leading-relaxed text-pretty">
+                The premier university sports league featuring the best teams and players from across South Africa's
+                leading institutions, promoting excellence in athletic competition.
+              </p>
+              <div className="flex space-x-3">
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="p-3 bg-background/50 hover:bg-primary hover:text-primary-foreground transition-all duration-300 backdrop-blur-sm"
+                >
+                  <Facebook className="w-4 h-4" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="p-3 bg-background/50 hover:bg-primary hover:text-primary-foreground transition-all duration-300 backdrop-blur-sm"
+                >
+                  <Twitter className="w-4 h-4" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="p-3 bg-background/50 hover:bg-primary hover:text-primary-foreground transition-all duration-300 backdrop-blur-sm"
+                >
+                  <Instagram className="w-4 h-4" />
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="p-3 bg-background/50 hover:bg-primary hover:text-primary-foreground transition-all duration-300 backdrop-blur-sm"
+                >
+                  <Youtube className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Quick Links */}
+            <div>
+              <h3 className="font-bold text-lg mb-6 flex items-center space-x-2">
+                <Star className="w-5 h-5 text-primary" />
+                <span>Quick Links</span>
+              </h3>
+              <ul className="space-y-3 text-muted-foreground">
+                <li>
+                  <Link href="/standings" className="hover:text-primary transition-colors duration-300 font-medium">
+                    League Standings
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/fixtures" className="hover:text-primary transition-colors duration-300 font-medium">
+                    Fixtures & Results
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/players" className="hover:text-primary transition-colors duration-300 font-medium">
+                    Player Profiles
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/teams" className="hover:text-primary transition-colors duration-300 font-medium">
+                    Teams
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/statistics" className="hover:text-primary transition-colors duration-300 font-medium">
+                    Statistics
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/news" className="hover:text-primary transition-colors duration-300 font-medium">
+                    Latest News
+                  </Link>
+                </li>
+              </ul>
+            </div>
+
+            {/* League Info */}
+            <div>
+              <h3 className="font-bold text-lg mb-6 flex items-center space-x-2">
+                <Award className="w-5 h-5 text-primary" />
+                <span>League Information</span>
+              </h3>
+              <ul className="space-y-3 text-muted-foreground">
+                <li>
+                  <Link href="/about" className="hover:text-primary transition-colors duration-300 font-medium">
+                    About the League
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/rules" className="hover:text-primary transition-colors duration-300 font-medium">
+                    Rules & Regulations
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/schedule" className="hover:text-primary transition-colors duration-300 font-medium">
+                    Season Schedule
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/venues" className="hover:text-primary transition-colors duration-300 font-medium">
+                    Venues
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/officials" className="hover:text-primary transition-colors duration-300 font-medium">
+                    Officials
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/history" className="hover:text-primary transition-colors duration-300 font-medium">
+                    League History
+                  </Link>
+                </li>
+              </ul>
+            </div>
+
+            {/* Contact Information */}
+            <div>
+              <h3 className="font-bold text-lg mb-6">Contact Us</h3>
+              <div className="space-y-4 text-muted-foreground">
+                <div className="flex items-start space-x-3">
+                  <MapPin className="w-5 h-5 text-primary mt-0.5" />
+                  <div className="text-sm leading-relaxed">
+                    <div className="font-semibold text-foreground">NWU Sports Complex</div>
+                    <div>Potchefstroom Campus</div>
+                    <div>South Africa</div>
+                  </div>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <Phone className="w-5 h-5 text-primary" />
+                  <span className="text-sm font-medium">+27 18 299 1111</span>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <Mail className="w-5 h-5 text-primary" />
+                  <span className="text-sm font-medium">sports@nwu.ac.za</span>
+                </div>
+              </div>
+              <div className="mt-6 p-4 bg-background/60 backdrop-blur-sm rounded-xl border border-muted/30">
+                <h4 className="font-bold mb-3 text-foreground">League Statistics</h4>
+                <div className="grid grid-cols-2 gap-3 text-sm">
+                  <div className="text-center">
+                    <div className="font-black text-2xl text-primary">12</div>
+                    <div className="text-muted-foreground">Teams</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="font-black text-2xl text-primary">240+</div>
+                    <div className="text-muted-foreground">Players</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="font-black text-2xl text-primary">132</div>
+                    <div className="text-muted-foreground">Matches</div>
+                  </div>
+                  <div className="text-center">
+                    <div className="font-black text-2xl text-primary">2024</div>
+                    <div className="text-muted-foreground">Season</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div className="border-t border-muted/50 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center">
+            <p className="text-muted-foreground font-medium">© 2024 NWU Sports League Manager. All rights reserved.</p>
+            <div className="flex space-x-6 mt-4 md:mt-0">
+              <Link
+                href="/privacy"
+                className="text-sm text-muted-foreground hover:text-primary transition-colors duration-300 font-medium"
+              >
+                Privacy Policy
+              </Link>
+              <Link
+                href="/terms"
+                className="text-sm text-muted-foreground hover:text-primary transition-colors duration-300 font-medium"
+              >
+                Terms of Service
+              </Link>
+              <Link
+                href="/support"
+                className="text-sm text-muted-foreground hover:text-primary transition-colors duration-300 font-medium"
+              >
+                Support
+              </Link>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+  )
+}
