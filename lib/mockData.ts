@@ -59,6 +59,10 @@ export interface BasePlayer {
     name: string
     phone: string
   }
+  status: string
+  rating: number
+  matchesPlayed: number
+  medicalStatus: string
 }
 
 
@@ -173,7 +177,11 @@ export const mockPlayers: Player[] = [
     medicalNotes: "Minor ankle sprain, recovering well.",
     email: "john.doe@nwu.edu",
     phone: "+27 82 123 4567",
-    emergencyContact: { name: "Jane Doe", phone: "+27 82 765 4321" }
+    emergencyContact: { name: "Jane Doe", phone: "+27 82 765 4321" },
+    status: "Active",
+    rating: 88,
+    matchesPlayed: 17,
+    medicalStatus: "Fit"
   },
   {
     id: 2,
@@ -198,7 +206,11 @@ export const mockPlayers: Player[] = [
     medicalNotes: "No current injuries.",
     email: "mike.smith@wits.ac.za",
     phone: "+27 83 234 5678",
-    emergencyContact: { name: "Sarah Smith", phone: "+27 83 876 5432" }
+    emergencyContact: { name: "Sarah Smith", phone: "+27 83 876 5432" },
+    status: "Active",
+    rating: 85,
+    matchesPlayed: 18,
+    medicalStatus: "Fit"
   },
   {
     id: 3,
@@ -223,7 +235,11 @@ export const mockPlayers: Player[] = [
     medicalNotes: "Recovered from knee surgery last season.",
     email: "david.johnson@uct.ac.za",
     phone: "+27 84 345 6789",
-    emergencyContact: { name: "Mary Johnson", phone: "+27 84 987 6543" }
+    emergencyContact: { name: "Mary Johnson", phone: "+27 84 987 6543" },
+    status: "Active",
+    rating: 82,
+    matchesPlayed: 16,
+    medicalStatus: "Fit"
   },
   {
     id: 4,
@@ -248,7 +264,11 @@ export const mockPlayers: Player[] = [
     medicalNotes: "Mild back pain, under physiotherapy.",
     email: "alex.wilson@up.ac.za",
     phone: "+27 85 456 7890",
-    emergencyContact: { name: "Laura Wilson", phone: "+27 85 098 7654" }
+    emergencyContact: { name: "Laura Wilson", phone: "+27 85 098 7654" },
+    status: "Active",
+    rating: 80,
+    matchesPlayed: 18,
+    medicalStatus: "Fit"
   },
   {
     id: 5,
@@ -275,7 +295,11 @@ export const mockPlayers: Player[] = [
     medicalNotes: "No injuries reported.",
     email: "peter.brown@uj.ac.za",
     phone: "+27 86 567 8901",
-    emergencyContact: { name: "Paul Brown", phone: "+27 86 109 8765" }
+    emergencyContact: { name: "Paul Brown", phone: "+27 86 109 8765" },
+    status: "Active",
+    rating: 90,
+    matchesPlayed: 18,
+    medicalStatus: "Fit"
   },
   {
     id: 6,
@@ -300,7 +324,11 @@ export const mockPlayers: Player[] = [
     medicalNotes: "Recovering from minor hamstring strain.",
     email: "kevin.davis@stellenbosch.ac.za",
     phone: "+27 87 678 9012",
-    emergencyContact: { name: "Kim Davis", phone: "+27 87 210 9876" }
+    emergencyContact: { name: "Kim Davis", phone: "+27 87 210 9876" },
+    status: "Injured",
+    rating: 84,
+    matchesPlayed: 17,
+    medicalStatus: "Injured"
   },
   {
     id: 7,
@@ -325,7 +353,11 @@ export const mockPlayers: Player[] = [
     medicalNotes: "No current injuries.",
     email: "samuel.green@nwu.edu",
     phone: "+27 82 234 5678",
-    emergencyContact: { name: "Lisa Green", phone: "+27 82 876 5432" }
+    emergencyContact: { name: "Lisa Green", phone: "+27 82 876 5432" },
+    status: "Active",
+    rating: 81,
+    matchesPlayed: 16,
+    medicalStatus: "Fit"
   },
   {
     id: 8,
@@ -350,7 +382,11 @@ export const mockPlayers: Player[] = [
     medicalNotes: "Recovering from ankle strain.",
     email: "nathan.white@wits.ac.za",
     phone: "+27 83 345 6789",
-    emergencyContact: { name: "Clara White", phone: "+27 83 987 6543" }
+    emergencyContact: { name: "Clara White", phone: "+27 83 987 6543" },
+    status: "Injured",
+    rating: 86,
+    matchesPlayed: 17,
+    medicalStatus: "Injured"
   },
   {
     id: 9,
@@ -375,7 +411,11 @@ export const mockPlayers: Player[] = [
     medicalNotes: "No injuries.",
     email: "ryan.king@uct.ac.za",
     phone: "+27 84 456 7890",
-    emergencyContact: { name: "Fiona King", phone: "+27 84 098 7654" }
+    emergencyContact: { name: "Fiona King", phone: "+27 84 098 7654" },
+    status: "Active",
+    rating: 83,
+    matchesPlayed: 18,
+    medicalStatus: "Fit"
   },
   {
     id: 10,
@@ -400,7 +440,11 @@ export const mockPlayers: Player[] = [
     medicalNotes: "Recovering from minor knee surgery.",
     email: "liam.scott@up.ac.za",
     phone: "+27 85 567 8901",
-    emergencyContact: { name: "Ella Scott", phone: "+27 85 109 8765" }
+    emergencyContact: { name: "Ella Scott", phone: "+27 85 109 8765" },
+    status: "Injured",
+    rating: 80,
+    matchesPlayed: 18,
+    medicalStatus: "Injured"
   },
   {
     id: 11,
@@ -427,7 +471,11 @@ export const mockPlayers: Player[] = [
     medicalNotes: "No injuries.",
     email: "oliver.brown@uj.ac.za",
     phone: "+27 86 678 9012",
-    emergencyContact: { name: "Paul Brown", phone: "+27 86 210 9876" }
+    emergencyContact: { name: "Paul Brown", phone: "+27 86 210 9876" },
+    status: "Active",
+    rating: 91,
+    matchesPlayed: 18,
+    medicalStatus: "Fit"
   },
   {
     id: 12,
@@ -452,7 +500,11 @@ export const mockPlayers: Player[] = [
     medicalNotes: "Minor groin strain, recovering.",
     email: "ethan.lewis@stellenbosch.ac.za",
     phone: "+27 87 789 0123",
-    emergencyContact: { name: "Emma Lewis", phone: "+27 87 321 0987" }
+    emergencyContact: { name: "Emma Lewis", phone: "+27 87 321 0987" },
+    status: "Injured",
+    rating: 85,
+    matchesPlayed: 17,
+    medicalStatus: "Injured"
   },
   {
     id: 13,
@@ -477,7 +529,11 @@ export const mockPlayers: Player[] = [
     medicalNotes: "No injuries.",
     email: "aiden.clark@nwu.edu",
     phone: "+27 82 345 6789",
-    emergencyContact: { name: "Mia Clark", phone: "+27 82 987 6543" }
+    emergencyContact: { name: "Mia Clark", phone: "+27 82 987 6543" },
+    status: "Active",
+    rating: 87,
+    matchesPlayed: 17,
+    medicalStatus: "Fit"
   },
   {
     id: 14,
@@ -502,7 +558,11 @@ export const mockPlayers: Player[] = [
     medicalNotes: "No injuries.",
     email: "noah.adams@wits.ac.za",
     phone: "+27 83 456 7890",
-    emergencyContact: { name: "Lily Adams", phone: "+27 83 098 7654" }
+    emergencyContact: { name: "Lily Adams", phone: "+27 83 098 7654" },
+    status: "Active",
+    rating: 84,
+    matchesPlayed: 18,
+    medicalStatus: "Fit"
   },
   {
     id: 15,
@@ -527,7 +587,11 @@ export const mockPlayers: Player[] = [
     medicalNotes: "No injuries.",
     email: "lucas.taylor@uct.ac.za",
     phone: "+27 84 567 8901",
-    emergencyContact: { name: "Sophia Taylor", phone: "+27 84 109 8765" }
+    emergencyContact: { name: "Sophia Taylor", phone: "+27 84 109 8765" },
+    status: "Active",
+    rating: 86,
+    matchesPlayed: 16,
+    medicalStatus: "Fit"
   },
   {
     id: 16,
@@ -552,7 +616,11 @@ export const mockPlayers: Player[] = [
     medicalNotes: "Recovering from minor knee strain.",
     email: "mason.hall@up.ac.za",
     phone: "+27 85 678 9012",
-    emergencyContact: { name: "Olivia Hall", phone: "+27 85 210 9876" }
+    emergencyContact: { name: "Olivia Hall", phone: "+27 85 210 9876" },
+    status: "Injured",
+    rating: 82,
+    matchesPlayed: 18,
+    medicalStatus: "Injured"
   }
 ]
 

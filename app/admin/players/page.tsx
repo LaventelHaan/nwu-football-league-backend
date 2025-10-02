@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { useAuth } from "@/hooks/use-auth"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -18,6 +19,7 @@ const positionOptions = ["ALL", "Goalkeeper", "Defender", "Midfielder", "Forward
 const teamOptions = ["ALL", "Eagles FC", "Lions United", "Tigers FC", "Women's United"]
 
 export default function PlayerManagement() {
+  const { isAuthenticated, isLoading } = useAuth()
   const [players, setPlayers] = useState(mockPlayers)
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("ALL")
@@ -27,6 +29,28 @@ export default function PlayerManagement() {
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [editingPlayer, setEditingPlayer] = useState<any>(null)
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading...</p>
+        </div>
+      </div>
+    )
+  }
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-muted-foreground">You must be logged in to access this page.</p>
+        </div>
+      </div>
+    )
+  }
 
   const filteredPlayers = players.filter((player) => {
     const matchesSearch =

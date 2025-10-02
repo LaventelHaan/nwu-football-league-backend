@@ -42,7 +42,7 @@ interface User {
   name?: string // computed field
 }
 
-const userRoles = ["Player", "Coach", "Administrator", "Referee", "Manager"]
+const userRoles = ["Player", "Coach", "Scout", "Administrator", "Referee", "Manager"]
 const userStatuses = ["Active", "Inactive", "Suspended", "Pending"]
 
 // Map display roles to API roles

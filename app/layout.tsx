@@ -5,6 +5,7 @@ import "./globals.css";
 
 import { AuthProvider } from "@/hooks/use-auth";
 import FAQWrapper from "@/components/ui/FloatingFAQ"; // Use the wrapper here
+import { Toaster } from "@/components/ui/sonner";
 
 export async function generateMetadata({
   params,
@@ -32,6 +33,7 @@ export default function RootLayout({
           {children}
           <FAQWrapper /> {/* Now only renders on home page */}
         </AuthProvider>
+        <Toaster />
       </body>
     </html>
   );

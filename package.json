@@ -7,7 +7,7 @@
     "build:analyze": "cross-env ANALYZE=true next build",
     "dev": "next dev",
     "lint": "next lint",
-    "start": "next start",
+    "start": "next start -p 3005",
     "server": "node app/backend/server-fixed.js",
     "dev:full": "concurrently \"npm run server\" \"npm run dev\""
   },

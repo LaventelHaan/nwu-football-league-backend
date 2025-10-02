@@ -2,6 +2,7 @@
 
 import type React from "react"
 import { useState } from "react"
+import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -9,10 +10,9 @@ import { Label } from "@/components/ui/label"
 import { Checkbox } from "@/components/ui/checkbox"
 import { ArrowLeft, Eye, EyeOff, Mail, Lock } from "lucide-react"
 import Link from "next/link"
-import { useRouter } from "next/navigation"
 import NavigationBar from "@/components/ui/navigation-bar"
 // Wherever you are using Coach (like login page or dashboard)
-type UserRole = "admin" | "coach" | "player" | "scouter"
+type UserRole = "admin" | "coach" | "player" | "scout"
 
 type User = {
   id: string
@@ -48,6 +48,10 @@ export default function LoginPage() {
       const data = await response.json()
 
       if (response.ok) {
+        console.log('Login response:', data)
+        console.log('User role from backend:', data.user.role)
+        console.log('User email:', data.user.email)
+        
         // Store user data and token
         const user: User = {
           id: data.user.id.toString(),
@@ -60,20 +64,30 @@ export default function LoginPage() {
         localStorage.setItem("token", data.token)
 
         // Redirect based on role
-        switch (data.user.role) {
+        const role = data.user.role && data.user.role.toLowerCase()
+        console.log('Normalized role:', role)
+        console.log('About to redirect based on role:', role)
+        
+        switch (role) {
           case "admin":
+            console.log('Redirecting admin to /admin/dashboard')
             router.push("/admin/dashboard")
             break
           case "coach":
+            console.log('Redirecting coach to /coach')
             router.push("/coach")
             break
           case "player":
-            router.push("/players/dashboard")
+            console.log('Redirecting player to /fixtures')
+            router.push("/fixtures")
             break
+          case "scout":
           case "scouter":
-            router.push("/scouting/dashboard")
+            console.log('Redirecting scout to /players')
+            router.push("/players")
             break
           default:
+            console.log('Default redirect to /home for role:', role)
             router.push("/home")
         }
       } else {

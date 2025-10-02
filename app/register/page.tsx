@@ -185,7 +185,7 @@ export default function RegisterPage() {
                 </div>
 
                 {/* Date of Birth Field */}
-                <div className="space-y-2 border-2 border-red-500 p-2">
+                <div className="space-y-2">
                   <Label htmlFor="dateOfBirth">Date of Birth</Label>
                   <Input
                     id="dateOfBirth"
@@ -207,7 +207,7 @@ export default function RegisterPage() {
                     <SelectContent>
                       <SelectItem value="player">Player</SelectItem>
                       <SelectItem value="coach">Coach</SelectItem>
-                      <SelectItem value="scouter">Scout</SelectItem>
+                      <SelectItem value="scout">Scout</SelectItem>
                       <SelectItem value="admin">Admin</SelectItem>
                     </SelectContent>
                   </Select>

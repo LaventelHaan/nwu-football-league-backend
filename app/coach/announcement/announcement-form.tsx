@@ -144,13 +144,13 @@ export function AnnouncementForm({ announcement, players, open, onOpenChange, on
                 <ScrollArea className="h-32">
                   <div className="space-y-2">
                     {players.map((player) => (
-                      <div key={player.id} className="flex items-center space-x-2">
+                      <div key={player.id.toString()} className="flex items-center space-x-2">
                         <Checkbox
-                          id={player.id}
-                          checked={formData.recipients.includes(player.id)}
-                          onCheckedChange={(checked) => handleRecipientChange(player.id, checked as boolean)}
+                          id={player.id.toString()}
+                          checked={formData.recipients.includes(player.id.toString())}
+                          onCheckedChange={(checked) => handleRecipientChange(player.id.toString(), checked as boolean)}
                         />
-                        <Label htmlFor={player.id} className="text-sm">
+                        <Label htmlFor={player.id.toString()} className="text-sm">
                           {player.name} - {player.position}
                         </Label>
                       </div>

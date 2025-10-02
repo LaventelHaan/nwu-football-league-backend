@@ -1,6 +1,7 @@
 "use client"
 
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
+import { useRouter } from "next/navigation"
 import { mockCoach } from "@/lib/mockData"
 
 interface Coach {
@@ -23,6 +24,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined)
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [coach, setCoach] = useState<Coach | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const router = useRouter()
 
   useEffect(() => {
     try {
@@ -48,6 +50,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const logout = () => {
     setCoach(null)
     localStorage.removeItem("nwu-coach")
+    localStorage.removeItem("currentUser")
+    localStorage.removeItem("token")
+    router.push("/home")
   }
 
   const value: AuthContextType = {

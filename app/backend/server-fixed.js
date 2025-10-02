@@ -82,7 +82,7 @@ function createUsersTable() {
       phone VARCHAR(20),
       date_of_birth DATE,
       password VARCHAR(255) NOT NULL,
-      role ENUM('admin', 'coach', 'player', 'scouter') DEFAULT 'player',
+      role ENUM('admin', 'coach', 'player', 'scout') DEFAULT 'player',
       team VARCHAR(255) DEFAULT 'N/A',
       position VARCHAR(255) DEFAULT 'N/A',
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -95,6 +95,16 @@ function createUsersTable() {
       console.error('Error creating users table:', err);
     } else {
       console.log('✅ users table created successfully');
+      
+      // Ensure role enum is correct
+      const alterRoleQuery = `ALTER TABLE users MODIFY COLUMN role ENUM('admin', 'coach', 'player', 'scout') DEFAULT 'player'`;
+      db.query(alterRoleQuery, (alterErr) => {
+        if (alterErr) {
+          console.error('Error updating role enum:', alterErr);
+        } else {
+          console.log('✅ Role enum updated to include scout');
+        }
+      });
     }
   });
 }
@@ -129,9 +139,10 @@ app.post('/api/register', (req, res) => {
     const { firstName, lastName, email, phone, password, role, team, position, dateOfBirth } = req.body;
     
     // Convert role to lowercase to match database enum
-    const normalizedRole = role ? role.toLowerCase() : 'player';
+    let normalizedRole = role ? role.toLowerCase() : 'player';
     
-    // Validate required fields
+    // Handle legacy 'scouter' value
+    if (normalizedRole === 'scouter') normalizedRole = 'scout';
     if (!firstName || !lastName || !email || !password) {
       console.log('❌ Missing required fields');
       return res.status(400).json({ 
@@ -241,9 +252,8 @@ app.post('/api/login', (req, res) => {
         return res.status(401).json({ error: 'Invalid email or password' });
       }
       
-      console.log('✅ Password matches');
-      
-      console.log('🎉 Login successful!');
+      console.log('🎉 Login successful for user:', user.email);
+      // Removed verbose success logging
       
       res.json({
         message: 'Login successful',
@@ -288,7 +298,7 @@ app.get('/api/users', (req, res) => {
         WHEN role = 'admin' THEN 'Administrator'
         WHEN role = 'coach' THEN 'Coach'
         WHEN role = 'player' THEN 'Player'
-        WHEN role = 'scouter' THEN 'Scout'
+        WHEN role = 'scout' THEN 'Scout'
         ELSE 'Unknown'
       END as role_display,
       'Active' as status,
@@ -320,9 +330,10 @@ app.post('/api/users', (req, res) => {
     const { firstName, lastName, email, phone, password, role, team, position, dateOfBirth } = req.body;
 
     // Convert role to lowercase to match database enum
-    const normalizedRole = role ? role.toLowerCase() : 'player';
-
-    // Validate required fields
+    let normalizedRole = role ? role.toLowerCase() : 'player';
+    
+    // Handle legacy 'scouter' value
+    if (normalizedRole === 'scouter') normalizedRole = 'scout';
     if (!firstName || !lastName || !email || !password) {
       console.log('❌ Missing required fields');
       return res.status(400).json({

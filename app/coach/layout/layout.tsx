@@ -128,6 +128,10 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
         <div className="space-y-2">
           <Button
             variant="ghost"
+            onClick={() => {
+              console.log('Settings button clicked');
+              alert('Settings feature coming soon!');
+            }}
             className={cn(
               "w-full justify-start gap-3 text-sidebar-foreground hover:bg-sidebar-accent",
               isCollapsed && "justify-center px-2",
@@ -139,7 +143,10 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
 
           <Button
             variant="ghost"
-            onClick={logout}
+            onClick={() => {
+              console.log('Logout button clicked');
+              logout();
+            }}
             className={cn(
               "w-full justify-start gap-3 text-sidebar-foreground hover:bg-sidebar-accent hover:text-destructive",
               isCollapsed && "justify-center px-2",

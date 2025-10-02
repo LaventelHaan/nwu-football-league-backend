@@ -38,4 +38,3 @@ export function UpcomingMatches({ matches }: UpcomingMatchesProps) {
     </Card>
   )
 }
-
