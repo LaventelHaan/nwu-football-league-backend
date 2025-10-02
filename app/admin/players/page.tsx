@@ -322,7 +322,9 @@ export default function PlayerManagement() {
                     </div>
                     <div>
                       <Label className="text-sm font-medium">Emergency Contact</Label>
-                      <p className="text-sm text-muted-foreground">{selectedPlayer.emergencyContact}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {selectedPlayer.emergencyContact?.name} ({selectedPlayer.emergencyContact?.phone})
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -418,7 +420,7 @@ export default function PlayerManagement() {
                 <div>
                   <Label className="text-sm font-medium">Previous Clubs</Label>
                   <div className="flex flex-wrap gap-2 mt-1">
-                    {selectedPlayer.previousClubs.map((club: string, index: number) => (
+                    {(selectedPlayer.previousClubs || []).map((club: string, index: number) => (
                       <Badge key={index} variant="outline" className="bg-muted/50">
                         {club}
                       </Badge>
@@ -428,7 +430,7 @@ export default function PlayerManagement() {
                 <div>
                   <Label className="text-sm font-medium">Achievements</Label>
                   <div className="flex flex-wrap gap-2 mt-1">
-                    {selectedPlayer.achievements.map((achievement: string, index: number) => (
+                    {(selectedPlayer.achievements || []).map((achievement: string, index: number) => (
                       <Badge key={index} variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-200">
                         {achievement}
                       </Badge>
@@ -454,7 +456,7 @@ export default function PlayerManagement() {
                   <Label htmlFor="name">Name</Label>
                   <Input
                     id="name"
-                    value={editingPlayer.name}
+                    value={editingPlayer.name ?? ""}
                     onChange={(e) => setEditingPlayer({ ...editingPlayer, name: e.target.value })}
                   />
                 </div>
@@ -463,7 +465,7 @@ export default function PlayerManagement() {
                   <Input
                     id="email"
                     type="email"
-                    value={editingPlayer.email}
+                    value={editingPlayer.email ?? ""}
                     onChange={(e) => setEditingPlayer({ ...editingPlayer, email: e.target.value })}
                   />
                 </div>
@@ -471,7 +473,7 @@ export default function PlayerManagement() {
                   <Label htmlFor="phone">Phone</Label>
                   <Input
                     id="phone"
-                    value={editingPlayer.phone}
+                    value={editingPlayer.phone ?? ""}
                     onChange={(e) => setEditingPlayer({ ...editingPlayer, phone: e.target.value })}
                   />
                 </div>
@@ -480,7 +482,7 @@ export default function PlayerManagement() {
                   <Input
                     id="jerseyNumber"
                     type="number"
-                    value={editingPlayer.jerseyNumber}
+                    value={editingPlayer.jerseyNumber ?? ""}
                     onChange={(e) =>
                       setEditingPlayer({ ...editingPlayer, jerseyNumber: Number.parseInt(e.target.value) })
                     }
@@ -489,7 +491,7 @@ export default function PlayerManagement() {
                 <div>
                   <Label htmlFor="position">Position</Label>
                   <Select
-                    value={editingPlayer.position}
+                    value={editingPlayer.position ?? ""}
                     onValueChange={(value) => setEditingPlayer({ ...editingPlayer, position: value })}
                   >
                     <SelectTrigger>
@@ -506,7 +508,7 @@ export default function PlayerManagement() {
                 <div>
                   <Label htmlFor="status">Status</Label>
                   <Select
-                    value={editingPlayer.status}
+                    value={editingPlayer.status ?? ""}
                     onValueChange={(value) => setEditingPlayer({ ...editingPlayer, status: value })}
                   >
                     <SelectTrigger>
@@ -525,7 +527,7 @@ export default function PlayerManagement() {
                 <Label htmlFor="medicalStatus">Medical Status</Label>
                 <Input
                   id="medicalStatus"
-                  value={editingPlayer.medicalStatus}
+                  value={editingPlayer.medicalStatus ?? ""}
                   onChange={(e) => setEditingPlayer({ ...editingPlayer, medicalStatus: e.target.value })}
                 />
               </div>
