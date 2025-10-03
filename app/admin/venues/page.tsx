@@ -144,7 +144,22 @@ const surfaceTypes = ["Natural Grass", "Artificial Turf", "Hybrid Grass", "Indoo
 const statusOptions = ["Active", "Maintenance", "Inactive"]
 
 export default function VenueManagement() {
-  const [venues, setVenues] = useState(mockVenues)
+  // Load from localStorage if available, else use mockVenues
+  const getInitialVenues = () => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("venues");
+      if (stored) return JSON.parse(stored);
+    }
+    return mockVenues;
+  };
+  const [venues, setVenues] = useState(getInitialVenues);
+  // Save to localStorage on change
+  const persistVenues = (newVenues: any[]) => {
+    setVenues(newVenues);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("venues", JSON.stringify(newVenues));
+    }
+  };
   const [searchTerm, setSearchTerm] = useState("")
   const [typeFilter, setTypeFilter] = useState("ALL")
   const [statusFilter, setStatusFilter] = useState("ALL")
@@ -189,23 +204,25 @@ export default function VenueManagement() {
   }
 
   const handleUpdateVenue = () => {
-    setVenues(venues.map((venue) => (venue.id === editingVenue.id ? editingVenue : venue)))
-    setIsEditDialogOpen(false)
-    setEditingVenue(null)
-  }
+    const updated = venues.map((venue) => (venue.id === editingVenue.id ? editingVenue : venue));
+    persistVenues(updated);
+    setIsEditDialogOpen(false);
+    setEditingVenue(null);
+  };
 
   const handleCreateVenue = () => {
     const venue = {
-      id: venues.length + 1,
+      id: venues.length > 0 ? Math.max(...venues.map(v => v.id)) + 1 : 1,
       ...newVenue,
       capacity: Number.parseInt(newVenue.capacity),
       fields: [],
       bookings: 0,
       lastMaintenance: new Date().toISOString().split("T")[0],
       nextMaintenance: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
-    }
-    setVenues([...venues, venue])
-    setIsCreateDialogOpen(false)
+    };
+    const updated = [...venues, venue];
+    persistVenues(updated);
+    setIsCreateDialogOpen(false);
     setNewVenue({
       name: "",
       address: "",
@@ -219,22 +236,22 @@ export default function VenueManagement() {
         phone: "",
         email: "",
       },
-    })
-  }
+    });
+  };
 
   const handleDeleteVenue = (venueId: number) => {
     if (confirm("Are you sure you want to delete this venue?")) {
-      setVenues(venues.filter((venue) => venue.id !== venueId))
+      const updated = venues.filter((venue) => venue.id !== venueId);
+      persistVenues(updated);
     }
-  }
+  };
 
   const handleToggleStatus = (venueId: number) => {
-    setVenues(
-      venues.map((venue) =>
-        venue.id === venueId ? { ...venue, status: venue.status === "Active" ? "Inactive" : "Active" } : venue,
-      ),
-    )
-  }
+    const updated = venues.map((venue) =>
+      venue.id === venueId ? { ...venue, status: venue.status === "Active" ? "Inactive" : "Active" } : venue,
+    );
+    persistVenues(updated);
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
