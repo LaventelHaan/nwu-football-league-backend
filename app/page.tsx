@@ -2,6 +2,16 @@
 
 import { useState, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import { title } from "process"
+import Image from "next/image";
+
+<Image 
+  src="/images/logosports-nwu2025.png" 
+  alt="NWU Sports 2025 League Manager Logo"
+  width={160}
+  height={160}
+  className="rounded-full"
+/>
 
 export default function LoadingPage() {
   const [progress, setProgress] = useState(0)
@@ -34,6 +44,7 @@ export default function LoadingPage() {
         <div className="absolute bottom-1/4 right-1/4 w-24 h-24 bg-accent rounded-full animate-bounce delay-300"></div>
         <div className="absolute top-1/2 right-1/3 w-16 h-16 bg-secondary rounded-full animate-ping delay-700"></div>
       </div>
+
 
       <div className="text-center z-10">
         {/* NWU Logo Container with Animation */}

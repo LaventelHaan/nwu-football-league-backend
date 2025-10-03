@@ -1,34 +1,17 @@
 "use client"
-//fixtures-fetch-from-express (imports added)
-import { useEffect, useState } from "react"
+
+import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Calendar, Clock, MapPin, ArrowLeft, Filter } from "lucide-react"
 import Link from "next/link"
+// Import centralized mock data
+import { mockFixtures } from "@/lib/mockData"
+import { mockResults } from "@/lib/mockData"
 
-// Public base URL for the Express API. Can be overridden via .env.local
-const API_BASE = process.env.NEXT_PUBLIC_FIXTURES_API ?? "http://localhost:4000";
-//ixture basic match info (used for upcoming matches)
-type Fixture = {
-  id: number;
-  homeTeam: string;
-  awayTeam: string;
-  date: string;
-  time: string;
-  venue: string;
-  status: string;
-  round: string;
-};
-// Result extends fixture with scores & optional stats
-type Result = Fixture & {
-  homeScore: number;
-  awayScore: number;
-  attendance?: number;
-  highlights?: string[];
-};
-// Utility to display match status as a badge
+
 const getStatusBadge = (status: string) => {
   switch (status) {
     case "upcoming":
@@ -47,36 +30,7 @@ const getStatusBadge = (status: string) => {
 }
 
 export default function FixturesPage() {
-  // Track which tab is selected: "upcoming" | "results"
   const [selectedTab, setSelectedTab] = useState("upcoming")
-  // Local state for fixtures + results
-  const [fixtures, setFixtures] = useState<Fixture[]>([])
-  const [results, setResults] = useState<Result[]>([])
-  const [loading, setLoading] = useState(true) // loading spinner state
-  const [error, setError] = useState<string | null>(null) // error state
-
-  useEffect(() => {
-    let isMounted = true
-    async function load() {
-      try {
-        // Make requests to fixtures + results endpoints (parallel)
-        const [fxRes, rsRes] = await Promise.all([
-          fetch(`${API_BASE}/api/fixtures`).then(r => r.json()),
-          fetch(`${API_BASE}/api/results`).then(r => r.json()),
-        ])
-        if (!isMounted) return
-        setFixtures(fxRes.fixtures ?? []) // assign fixtures
-        setResults(rsRes.results ?? []) // assign results
-      } catch (e: any) {
-        if (!isMounted) return
-        setError(e?.message ?? 'Failed to load fixtures')
-      } finally {
-        if (isMounted) setLoading(false)
-      }
-    }
-    load()
-    return () => { isMounted = false }  // cleanup on unmount
-  }, [])
 
   return (
     <div className="min-h-screen bg-background">
@@ -108,7 +62,6 @@ export default function FixturesPage() {
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        {/* Upcoming Fixtures | Results */}
         <Tabs value={selectedTab} onValueChange={setSelectedTab} className="w-full">
           <div className="flex justify-between items-center mb-6">
             <TabsList className="grid w-full max-w-md grid-cols-2">
@@ -123,11 +76,8 @@ export default function FixturesPage() {
 
           {/* Upcoming Fixtures */}
           <TabsContent value="upcoming" className="space-y-6">
-            {/* loading + error UI */}
-            {loading && <div className="text-sm text-muted-foreground">Loading fixtures...</div>}
-            {error && <div className="text-sm text-red-600">{error}</div>}
             <div className="grid gap-4">
-              {fixtures.map((fixture) => (
+              {mockFixtures.map((fixture) => (
                 <Card key={fixture.id} className="hover:shadow-md transition-shadow">
                   <CardContent className="p-6">
                     <div className="flex justify-between items-start mb-4">
@@ -149,7 +99,7 @@ export default function FixturesPage() {
                         </div>
                       </div>
 
-                      {/* Match Details date, time, venue*/}
+                      {/* Match Details */}
                       <div className="space-y-2 text-center md:text-left">
                         <div className="flex items-center justify-center md:justify-start space-x-2">
                           <Calendar className="w-4 h-4 text-muted-foreground" />
@@ -165,7 +115,7 @@ export default function FixturesPage() {
                         </div>
                       </div>
 
-                      {/* button for future details view*/}
+                      {/* Actions */}
                       <div className="flex justify-center md:justify-end">
                         <Button variant="outline" size="sm">
                           View Details
@@ -180,10 +130,8 @@ export default function FixturesPage() {
 
           {/* Recent Results */}
           <TabsContent value="results" className="space-y-6">
-            {loading && <div className="text-sm text-muted-foreground">Loading results...</div>}
-            {error && <div className="text-sm text-red-600">{error}</div>}
             <div className="grid gap-4">
-              {results.map((result) => (
+              {mockResults.map((result) => (
                 <Card key={result.id} className="hover:shadow-md transition-shadow">
                   <CardContent className="p-6">
                     <div className="flex justify-between items-start mb-4">

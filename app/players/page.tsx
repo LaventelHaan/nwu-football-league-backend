@@ -10,123 +10,10 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { ArrowLeft, Search, Trophy, Target, Calendar, MapPin } from "lucide-react"
 import Link from "next/link"
 
-// Mock data for players
-const mockPlayers = [
-  {
-    id: 1,
-    name: "John Doe",
-    team: "NWU Eagles",
-    position: "Forward",
-    age: 22,
-    nationality: "South Africa",
-    goals: 18,
-    assists: 7,
-    appearances: 17,
-    yellowCards: 2,
-    redCards: 0,
-    avatar: "/football-player-portrait.png",
-    joinDateFormatted: "2023-08-15",
-    previousTeam: "Youth Academy",
-  },
-  {
-    id: 2,
-    name: "Mike Smith",
-    team: "Wits Wolves",
-    position: "Midfielder",
-    age: 21,
-    nationality: "South Africa",
-    goals: 15,
-    assists: 12,
-    appearances: 18,
-    yellowCards: 4,
-    redCards: 1,
-    avatar: "/football-midfielder-portrait.png",
-    joinDateFormatted: "2023-07-20",
-    previousTeam: "Local Club FC",
-  },
-  {
-    id: 3,
-    name: "David Johnson",
-    team: "UCT Lions",
-    position: "Forward",
-    age: 23,
-    nationality: "Nigeria",
-    goals: 12,
-    assists: 5,
-    appearances: 16,
-    yellowCards: 1,
-    redCards: 0,
-    
-    joinDateFormatted: "2023-09-01",
-    previousTeam: "Lagos United",
-  },
-  {
-    id: 4,
-    name: "Alex Wilson",
-    team: "UP Tuks",
-    position: "Defender",
-    age: 24,
-    nationality: "South Africa",
-    goals: 3,
-    assists: 8,
-    appearances: 18,
-    yellowCards: 6,
-    redCards: 0,
-    avatar: "/football-defender-portrait.png",
-    joinDateFormatted: "2023-06-10",
-    previousTeam: "Pretoria FC",
-  },
-  {
-    id: 5,
-    name: "Peter Brown",
-    team: "UJ Orange",
-    position: "Goalkeeper",
-    age: 25,
-    nationality: "Zimbabwe",
-    goals: 0,
-    assists: 1,
-    appearances: 18,
-    yellowCards: 1,
-    redCards: 0,
-    cleanSheets: 8,
-    saves: 67,
-    avatar: "/football-goalkeeper-portrait.png",
-    joinDateFormatted: "2023-08-01",
-    previousTeam: "Harare City",
-  },
-  {
-    id: 6,
-    name: "Kevin Davis",
-    team: "Stellenbosch FC",
-    position: "Midfielder",
-    age: 20,
-    nationality: "South Africa",
-    goals: 8,
-    assists: 15,
-    appearances: 17,
-    yellowCards: 3,
-    redCards: 0,
-    avatar: "/football-young-midfielder-portrait.png",
-    joinDateFormatted: "2023-07-15",
-    previousTeam: "Cape Town Youth",
-  },
-  {
-    id: 7,
-    name: "Forget Nukeri",
-    team: "Stellenbosch FC",
-    position: "Forward",
-    age: 23,
-    nationality: "South Africa",
-    goals: 3,
-    assists: 8,
-    appearances: 18,
-    yellowCards: 6,
-    redCards: 0,
-    avatar: "/forgetnukeriID.jpg",
-    joinDateFormatted: "2023-06-10",
-    previousTeam: "Pretoria FC",
-  }
-]
+// Import centralized mock data
+import { mockPlayers } from "@/lib/mockData"  // <- path to your centralized mock data file
+
+
 
 const getPositionColor = (position: string) => {
   switch (position.toLowerCase()) {
@@ -298,7 +185,7 @@ export default function PlayersPage() {
                   <div className="flex items-center space-x-2">
                     <Calendar className="w-3 h-3 text-muted-foreground" />
                     <span className="text-muted-foreground">
-                      Joined {player.joinDateFormatted}
+                      Joined {player.joinDate}
 
                     </span>
                   </div>

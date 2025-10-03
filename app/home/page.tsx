@@ -3,6 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { MessageSquare } from "lucide-react"
 import {
   Trophy,
   Calendar,
@@ -19,96 +20,87 @@ import {
   Star,
   Award,
   Target,
+  Clock,
+  Zap,
 } from "lucide-react"
 import Link from "next/link"
+import { useState, useEffect } from "react"
+import TeamOfTheWeek from "@/components/ui/TeamOfTheWeek"
 
-// Mock data for the homepage
-const mockData = {
-  featuredMatches: [
-    {
-      id: 1,
-      homeTeam: "NWU Eagles",
-      awayTeam: "Wits Wolves",
-      date: "2024-01-15",
-      time: "15:00",
-      venue: "NWU Stadium",
-      status: "upcoming",
-    },
-    {
-      id: 2,
-      homeTeam: "UCT Lions",
-      awayTeam: "NWU Eagles",
-      date: "2024-01-12",
-      time: "14:30",
-      venue: "UCT Grounds",
-      status: "final",
-      homeScore: 2,
-      awayScore: 3,
-    },
-  ],
-  leagueStandings: [
-    { position: 1, team: "NWU Eagles", points: 45, wins: 14, draws: 3, losses: 1 },
-    { position: 2, team: "Wits Wolves", points: 42, wins: 13, draws: 3, losses: 2 },
-    { position: 3, team: "UCT Lions", points: 38, wins: 12, draws: 2, losses: 4 },
-  ],
-  topScorers: [
-    { name: "John Doe", team: "NWU Eagles", goals: 18 },
-    { name: "Mike Smith", team: "Wits Wolves", goals: 15 },
-    { name: "David Johnson", team: "UCT Lions", goals: 12 },
-  ],
-  news: [
-    {
-      id: 1,
-      title: "NWU Eagles Maintain Top Position",
-      summary: "The Eagles continue their impressive season with a commanding victory...",
-      date: "2024-01-10",
-    },
-    {
-      id: 2,
-      title: "Championship Finals Approaching",
-      summary: "With only 4 matches remaining, the race for the championship intensifies...",
-      date: "2024-01-08",
-    },
-  ],
-  highlights: [
-    {
-      id: 1,
-      title: "NWU Eagles vs Wits Wolves - Match Highlights",
-      type: "video",
-      thumbnail: "/football-match-highlight.png",
-      duration: "3:45",
-      views: "12.5K",
-      date: "2024-01-12",
-    },
-    {
-      id: 2,
-      title: "Best Goals of the Season",
-      type: "video",
-      thumbnail: "/football-goals-compilation.png",
-      duration: "5:20",
-      views: "8.2K",
-      date: "2024-01-10",
-    },
-    {
-      id: 3,
-      title: "Championship Trophy Ceremony",
-      type: "image",
-      thumbnail: "/trophy-ceremony.png",
-      views: "15.3K",
-      date: "2024-01-08",
-    },
-    {
-      id: 4,
-      title: "Player Training Session",
-      type: "image",
-      thumbnail: "/training-session.png",
-      views: "6.7K",
-      date: "2024-01-05",
-    },
-  ],
+//import { mockPlayers, mockFixtures, mockHomeData, mockTeamOfTheWeek } from "@/lib/mockData"
+import { mockNews,mockTopScorers,mockStandings,mockHomeData,mockFixtures, mockTeamOfTheWeek } from "@/lib/mockData" 
+const getAutomaticLiveMatches = (fixtures: any[]) => {
+  const now = new Date()
+  const currentTime = now.getTime()
+
+  console.log("[v0] Current time:", now.toLocaleString())
+
+  return fixtures
+    .map((fixture) => {
+      // Parse fixture date and time
+      const fixtureDateTime = new Date(`${fixture.date}T${fixture.time}:00`)
+      const fixtureEndTime = new Date(fixtureDateTime.getTime() + fixture.duration * 60 * 1000)
+
+      const fixtureStartTime = fixtureDateTime.getTime()
+      const fixtureEndTimeMs = fixtureEndTime.getTime()
+
+      console.log(`[v0] Checking fixture ${fixture.homeTeam} vs ${fixture.awayTeam}:`)
+      console.log(`[v0] - Start: ${fixtureDateTime.toLocaleString()}`)
+      console.log(`[v0] - End: ${fixtureEndTime.toLocaleString()}`)
+      console.log(`[v0] - Is Live: ${currentTime >= fixtureStartTime && currentTime <= fixtureEndTimeMs}`)
+
+      // Check if match should be live
+      if (currentTime >= fixtureStartTime && currentTime <= fixtureEndTimeMs) {
+        const elapsedMinutes = Math.floor((currentTime - fixtureStartTime) / (1000 * 60))
+
+        return {
+          ...fixture,
+          id: fixture.id,
+          homeScore: Math.floor(Math.random() * 4), // Mock dynamic scores
+          awayScore: Math.floor(Math.random() * 4),
+          minute: Math.min(elapsedMinutes, fixture.duration),
+          status: "live",
+          events: {
+            corners: {
+              home: Math.floor(Math.random() * 8),
+              away: Math.floor(Math.random() * 8),
+            },
+            yellowCards: {
+              home: Math.floor(Math.random() * 4),
+              away: Math.floor(Math.random() * 4),
+            },
+            redCards: {
+              home: Math.floor(Math.random() * 2),
+              away: Math.floor(Math.random() * 2),
+            },
+          },
+        }
+      }
+
+      return null
+    })
+    .filter(Boolean) // Remove null values
 }
 
 export default function HomePage() {
+  const [liveMatches, setLiveMatches] = useState<any[]>([])
+
+  useEffect(() => {
+    const updateLiveMatches = () => {
+      const currentLiveMatches = getAutomaticLiveMatches(mockFixtures)
+      setLiveMatches(currentLiveMatches)
+      console.log("[v0] Updated live matches:", currentLiveMatches.length, "matches currently live")
+    }
+
+    // Initial update
+    updateLiveMatches()
+
+    // Update every minute
+    const interval = setInterval(updateLiveMatches, 60000)
+
+    return () => clearInterval(interval)
+  }, [])
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/5 to-background">
       {/* Background pattern overlay */}
@@ -195,53 +187,99 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* Highlights Section */}
-        <section>
-          <div className="text-center mb-8">
-            <h2 className="text-3xl font-bold text-foreground mb-3">Highlights & Media</h2>
-            <p className="text-muted-foreground text-lg">Catch up on the best moments from recent matches</p>
-          </div>
-          <Card className="shadow-xl border-0 bg-gradient-to-br from-background/95 via-muted/10 to-background/95 backdrop-blur-sm">
-            <CardContent className="p-8">
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                {mockData.highlights.map((item) => (
-                  <div key={item.id} className="group cursor-pointer">
-                    <div className="relative overflow-hidden rounded-xl mb-4 shadow-lg hover:shadow-2xl transition-all duration-300 bg-background/50 backdrop-blur-sm">
-                      <img
-                        src={item.thumbnail || "/placeholder.svg"}
-                        alt={item.title}
-                        className="w-full h-40 object-cover group-hover:scale-110 transition-transform duration-500"
-                      />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent group-hover:from-black/70 transition-all duration-300 flex items-center justify-center">
-                        {item.type === "video" ? (
-                          <div className="bg-primary/90 backdrop-blur-sm rounded-full p-3 group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                            <Play className="w-6 h-6 text-primary-foreground fill-current" />
-                          </div>
-                        ) : (
-                          <div className="bg-primary/90 backdrop-blur-sm rounded-full p-3 group-hover:scale-110 transition-transform duration-300 shadow-lg">
-                            <ImageIcon className="w-6 h-6 text-primary-foreground" />
-                          </div>
-                        )}
-                      </div>
-                      {item.duration && (
-                        <div className="absolute bottom-3 right-3 bg-black/80 backdrop-blur-sm text-white text-xs font-medium px-3 py-1 rounded-full">
-                          {item.duration}
-                        </div>
-                      )}
-                    </div>
-                    <h3 className="font-semibold text-base mb-2 line-clamp-2 group-hover:text-primary transition-colors duration-300">
-                      {item.title}
-                    </h3>
-                    <div className="flex justify-between text-sm text-muted-foreground">
-                      <span className="font-medium">{item.views} views</span>
-                      <span>{item.date}</span>
-                    </div>
-                  </div>
-                ))}
+        {liveMatches.length > 0 && (
+          <section>
+            <div className="text-center mb-8">
+              <div className="flex items-center justify-center space-x-3 mb-3">
+                <div className="bg-red-500/15 backdrop-blur-sm rounded-lg p-2 animate-pulse">
+                  <Zap className="w-6 h-6 text-red-500" />
+                </div>
+                <h2 className="text-3xl font-bold text-foreground">Live Scores</h2>
+                <Badge variant="destructive" className="animate-pulse font-semibold">
+                  LIVE
+                </Badge>
               </div>
-            </CardContent>
-          </Card>
-        </section>
+              <p className="text-muted-foreground text-lg">
+                {liveMatches.length} match{liveMatches.length !== 1 ? "es" : ""} currently in progress
+              </p>
+            </div>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {liveMatches.map((match) => (
+                <Card
+                  key={match.id}
+                  className="shadow-xl border-2 border-red-500/20 bg-gradient-to-br from-background/95 via-red-50/10 to-background/95 backdrop-blur-sm relative overflow-hidden"
+                >
+                  {/* Live indicator animation */}
+                  <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-red-500 via-red-400 to-red-500 animate-pulse"></div>
+
+                  <CardHeader className="pb-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center space-x-2">
+                        <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse"></div>
+                        <span className="font-bold text-red-500">LIVE</span>
+                      </div>
+                      <div className="flex items-center space-x-2 text-muted-foreground">
+                        <Clock className="w-4 h-4" />
+                        <span className="font-semibold">
+                          {match.minute >= match.duration ? `${match.duration}' FT` : `${match.minute}'`}
+                        </span>
+                      </div>
+                    </div>
+                  </CardHeader>
+
+                  <CardContent className="space-y-6">
+                    {/* Score Display */}
+                    <div className="bg-gradient-to-r from-muted/20 via-muted/10 to-muted/20 border border-muted/30 rounded-xl p-6 backdrop-blur-sm">
+                      <div className="flex justify-between items-center">
+                        <div className="text-center flex-1">
+                          <div className="font-bold text-lg mb-2">{match.homeTeam}</div>
+                          <div className="text-4xl font-black text-primary">{match.homeScore}</div>
+                        </div>
+                        <div className="text-muted-foreground font-bold text-2xl mx-6">-</div>
+                        <div className="text-center flex-1">
+                          <div className="font-bold text-lg mb-2">{match.awayTeam}</div>
+                          <div className="text-4xl font-black text-primary">{match.awayScore}</div>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Match Stats */}
+                    <div className="grid grid-cols-3 gap-4 text-center">
+                      <div className="bg-background/60 backdrop-blur-sm rounded-lg p-3 border border-muted/20">
+                        <div className="text-sm text-muted-foreground mb-1">Corners</div>
+                        <div className="font-bold text-lg">
+                          {match.events.corners.home} - {match.events.corners.away}
+                        </div>
+                      </div>
+                      <div className="bg-background/60 backdrop-blur-sm rounded-lg p-3 border border-muted/20">
+                        <div className="text-sm text-muted-foreground mb-1">Yellow Cards</div>
+                        <div className="font-bold text-lg text-yellow-500">
+                          {match.events.yellowCards.home} - {match.events.yellowCards.away}
+                        </div>
+                      </div>
+                      <div className="bg-background/60 backdrop-blur-sm rounded-lg p-3 border border-muted/20">
+                        <div className="text-sm text-muted-foreground mb-1">Red Cards</div>
+                        <div className="font-bold text-lg text-red-500">
+                          {match.events.redCards.home} - {match.events.redCards.away}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Venue */}
+                    <div className="text-center text-muted-foreground font-medium">
+                      <MapPin className="w-4 h-4 inline mr-1" />
+                      {match.venue}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          </section>
+        )}
+
+
+        {/* Team of the Week Section */}
+        <TeamOfTheWeek team={mockTeamOfTheWeek} />
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Featured Matches */}
@@ -256,7 +294,7 @@ export default function HomePage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                {mockData.featuredMatches.map((match) => (
+                {mockHomeData.allFixtures.map((match) => (
                   <div
                     key={match.id}
                     className="bg-gradient-to-r from-muted/20 via-muted/10 to-muted/20 border border-muted/30 rounded-xl p-6 hover:shadow-lg hover:bg-gradient-to-r hover:from-muted/30 hover:via-muted/15 hover:to-muted/30 transition-all duration-300 backdrop-blur-sm"
@@ -306,7 +344,7 @@ export default function HomePage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {mockData.leagueStandings.map((team) => (
+                  {mockStandings.map((team) => (
                     <div
                       key={team.position}
                       className="flex justify-between items-center p-3 rounded-lg hover:bg-muted/20 transition-colors duration-300 backdrop-blur-sm"
@@ -316,7 +354,8 @@ export default function HomePage() {
                           {team.position}
                         </div>
                         <div>
-                          <div className="font-bold text-base">{team.team}</div>
+                          <div className="font-bold text-base">{team.name}</div>
+
                           <div className="text-sm text-muted-foreground font-medium">
                             {team.wins}W • {team.draws}D • {team.losses}L
                           </div>
@@ -347,7 +386,7 @@ export default function HomePage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {mockData.topScorers.map((player, index) => (
+                {mockTopScorers.map((player, index) => (
                   <div
                     key={index}
                     className="flex justify-between items-center p-3 rounded-lg hover:bg-muted/20 transition-colors duration-300 backdrop-blur-sm"
@@ -383,12 +422,12 @@ export default function HomePage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
-                {mockData.news.map((article) => (
+                {mockNews.map((article) => (
                   <div key={article.id} className="border-b border-muted/30 pb-6 last:border-b-0 last:pb-0">
                     <h3 className="font-bold text-lg mb-3 text-balance hover:text-primary transition-colors duration-300 cursor-pointer">
                       {article.title}
                     </h3>
-                    <p className="text-muted-foreground mb-3 text-pretty leading-relaxed">{article.summary}</p>
+                    <p className="text-muted-foreground mb-3 text-pretty leading-relaxed">{article.excerpt}</p>
                     <div className="text-sm text-muted-foreground font-medium">{article.date}</div>
                   </div>
                 ))}
@@ -397,6 +436,7 @@ export default function HomePage() {
           </Card>
         </div>
       </main>
+
 
       <footer className="relative bg-gradient-to-br from-muted/90 via-muted/80 to-muted/90 mt-20 border-t border-muted/50 backdrop-blur-sm">
         <div className="absolute inset-0 bg-grid-pattern opacity-5"></div>
