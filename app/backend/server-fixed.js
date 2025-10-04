@@ -11,10 +11,11 @@ app.use(express.json());
 
 // Database connection
 const db = mysql.createConnection({
-  host: 'localhost',
-  user: 'root',
-  password: 'debruyne17', // Your MySQL password
-  database: 'nwusoccer'
+  host: 'sql10.freesqldatabase.com',
+  user: 'sql10801236',
+  password: 'gerJYPiefZ',
+  database: 'sql10801236',
+  port: 3306
 });
 
 // Connect to database
@@ -25,25 +26,8 @@ db.connect((err) => {
   }
   console.log('✅ Connected to MySQL database');
   
-  // Create database if it doesn't exist
-  db.query('CREATE DATABASE IF NOT EXISTS nwusoccer', (err) => {
-    if (err) {
-      console.error('Error creating database:', err);
-      return;
-    }
-    console.log('✅ Database nwusoccer ready');
-    
-    // Use the database
-    db.query('USE nwusoccer', (err) => {
-      if (err) {
-        console.error('Error using database:', err);
-        return;
-      }
-      
-      // Create tables
-      createTables();
-    });
-  });
+  // Create tables if they don't exist
+  createTables();
 });
 
 // Create tables
@@ -82,11 +66,11 @@ function createUsersTable() {
       phone VARCHAR(20),
       date_of_birth DATE,
       password VARCHAR(255) NOT NULL,
-      role ENUM('admin', 'coach', 'player', 'scout') DEFAULT 'player',
-      team VARCHAR(255) DEFAULT 'N/A',
-      position VARCHAR(255) DEFAULT 'N/A',
+      role ENUM('admin', 'coach', 'player', 'scout') NOT NULL DEFAULT 'player',
+      team VARCHAR(255),
+      position VARCHAR(255),
       created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+      updated_at DATETIME DEFAULT NULL
     )
   `;
   
@@ -475,7 +459,7 @@ app.delete('/api/users/:id', (req, res) => {
 // Start server
 app.listen(PORT, () => {
   console.log(`🚀 Backend server running on port ${PORT}`);
-  console.log(`📊 Database: nwusoccer`);
+  console.log(`📊 Database: sql10801236`);
   console.log(`🔗 Test endpoint: http://localhost:${PORT}/api/test`);
   console.log(`📝 Register endpoint: http://localhost:${PORT}/api/register`);
   console.log(`🔐 Login endpoint: http://localhost:${PORT}/api/login`);
