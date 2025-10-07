@@ -24,6 +24,8 @@ export default function RegisterPage() {
     password: "",
     confirmPassword: "",
     role: "",
+    team: "",
+    position: "",
     agreeToTerms: false,
   })
   const [showPassword, setShowPassword] = useState(false)
@@ -66,6 +68,8 @@ export default function RegisterPage() {
           dateOfBirth: formData.dateOfBirth,
           password: formData.password,
           role: formData.role,
+          team: formData.team || null,
+          position: formData.position || null,
         }),
       })
 
@@ -212,6 +216,43 @@ export default function RegisterPage() {
                     </SelectContent>
                   </Select>
                 </div>
+
+                {/* Team Selection - Only show for players */}
+                {formData.role === "player" && (
+                  <div className="space-y-2">
+                    <Label htmlFor="team">Team</Label>
+                    <Select value={formData.team} onValueChange={(value) => handleInputChange("team", value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select your team" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="NWU A">NWU A</SelectItem>
+                        <SelectItem value="NWU B">NWU B</SelectItem>
+                        <SelectItem value="NWU C">NWU C</SelectItem>
+                        <SelectItem value="NWU D">NWU D</SelectItem>
+                        <SelectItem value="NWU Reserves">NWU Reserves</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
+
+                {/* Position Selection - Only show for players */}
+                {formData.role === "player" && (
+                  <div className="space-y-2">
+                    <Label htmlFor="position">Position</Label>
+                    <Select value={formData.position} onValueChange={(value) => handleInputChange("position", value)}>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select your position" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Forward">Forward</SelectItem>
+                        <SelectItem value="Midfielder">Midfielder</SelectItem>
+                        <SelectItem value="Defender">Defender</SelectItem>
+                        <SelectItem value="Goalkeeper">Goalkeeper</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                )}
 
                 {/* Password Fields */}
                 <div className="space-y-2">

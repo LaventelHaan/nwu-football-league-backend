@@ -15,7 +15,7 @@ const nextConfig = {
   },
   images: {
     // Keep images optimized for better performance
-    // unoptimized: true,
+    unoptimized: true,
     formats: ['image/webp', 'image/avif'],
   },
   // Add build optimizations

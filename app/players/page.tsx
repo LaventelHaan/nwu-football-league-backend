@@ -124,7 +124,6 @@ export default function PlayersPage() {
               <span className="font-semibold">{players.length} Players</span>
             </div>
           </div>
-        </div>
       </header>
 
       <main className="container mx-auto px-4 py-8">
@@ -234,7 +233,6 @@ export default function PlayersPage() {
                     <Calendar className="w-3 h-3 text-muted-foreground" />
                     <span className="text-muted-foreground">
                       Joined {player.joinDate}
-
                     </span>
                   </div>
                 </div>

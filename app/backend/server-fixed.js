@@ -281,6 +281,47 @@ app.post('/api/register', (req, res) => {
         }
         
         console.log('✅ Successfully inserted into users table, ID:', result.insertId);
+        
+        // If role is player, also insert into players table
+        if (normalizedRole === 'player') {
+          // Calculate age from date of birth
+          let age = null;
+          if (dateOfBirth) {
+            const birthDate = new Date(dateOfBirth);
+            const today = new Date();
+            age = today.getFullYear() - birthDate.getFullYear();
+            const monthDiff = today.getMonth() - birthDate.getMonth();
+            if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+              age--;
+            }
+          }
+          
+          const playerName = `${firstName} ${lastName}`;
+          const insertPlayerQuery = `
+            INSERT INTO players (name, team, position, age, email, phone, join_date)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+          `;
+          
+          const playerValues = [
+            playerName,
+            team || 'N/A', // team from form or default
+            position || 'N/A', // position from form or default
+            age,
+            email,
+            phone || null,
+            new Date().toISOString().split('T')[0] // join_date
+          ];
+          
+          db.query(insertPlayerQuery, playerValues, (playerErr, playerResult) => {
+            if (playerErr) {
+              console.error('❌ Error inserting into players table:', playerErr);
+              // Don't fail the whole registration, just log the error
+            } else {
+              console.log('✅ Successfully inserted into players table, ID:', playerResult.insertId);
+            }
+          });
+        }
+        
         console.log('🎉 User registration completed successfully!');
         
         res.status(201).json({ 
