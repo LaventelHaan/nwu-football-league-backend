@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -24,19 +24,41 @@ const getPositionColor = (position: string) => {
     case "defender":
       return "bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
     case "goalkeeper":
-      return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200"
     default:
       return "bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-200"
   }
 }
 
 export default function PlayersPage() {
+  const [players, setPlayers] = useState<any[]>([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedTeam, setSelectedTeam] = useState("all")
   const [selectedPosition, setSelectedPosition] = useState("all")
-  const [isClient, setIsClient] = useState(false)
 
-  const filteredPlayers = mockPlayers.filter((player) => {
+  // Fetch players from API
+  useEffect(() => {
+    const fetchPlayers = async () => {
+      try {
+        const response = await fetch('http://localhost:3002/api/players')
+        if (!response.ok) {
+          throw new Error('Failed to fetch players')
+        }
+        const data = await response.json()
+        setPlayers(data)
+      } catch (err: any) {
+        setError(err.message)
+        console.error('Error fetching players:', err)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchPlayers()
+  }, [])
+
+  const filteredPlayers = players.filter((player) => {
     const matchesSearch =
       player.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       player.team.toLowerCase().includes(searchTerm.toLowerCase())
@@ -47,15 +69,41 @@ export default function PlayersPage() {
     return matchesSearch && matchesTeam && matchesPosition
   })
 
-  const teams = [...new Set(mockPlayers.map((player) => player.team))]
-  const positions = [...new Set(mockPlayers.map((player) => player.position))]
+  const teams = [...new Set(players.map((player) => player.team))]
+  const positions = [...new Set(players.map((player) => player.position))]
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-2xl font-bold mb-4">Loading Players...</div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
+        </div>
+      </div>
+    )
+  }
+
+  if (error) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center text-red-600">
+          <div className="text-2xl font-bold mb-4">Error Loading Players</div>
+          <div>{error}</div>
+          <button 
+            onClick={() => window.location.reload()}
+            className="mt-4 px-4 py-2 bg-primary text-primary-foreground rounded hover:bg-primary/90"
+          >
+            Try Again
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <header className="bg-primary text-primary-foreground py-6">
         <div className="container mx-auto px-4">
-          <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <Link href="/home">
                 <Button variant="ghost" size="sm" className="text-primary-foreground hover:bg-primary-foreground/20">
@@ -73,7 +121,7 @@ export default function PlayersPage() {
             </div>
             <div className="flex items-center space-x-2">
               <Trophy className="w-6 h-6" />
-              <span className="font-semibold">{mockPlayers.length} Players</span>
+              <span className="font-semibold">{players.length} Players</span>
             </div>
           </div>
         </div>

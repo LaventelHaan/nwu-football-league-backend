@@ -11,11 +11,10 @@ app.use(express.json());
 
 // Database connection
 const db = mysql.createConnection({
-  host: 'sql10.freesqldatabase.com',
-  user: 'sql10801236',
-  password: 'gerJYPiefZ',
-  database: 'sql10801236',
-  port: 3306
+  host: 'localhost',
+  user: 'root',
+  password: 'debruyne17',
+  database: 'nwusoccer'
 });
 
 // Connect to database
@@ -58,7 +57,7 @@ function createTables() {
 function createUsersTable() {
   // Create users table
   const createUsersTable = `
-    CREATE TABLE users (
+    CREATE TABLE IF NOT EXISTS users (
       id INT AUTO_INCREMENT PRIMARY KEY,
       first_name VARCHAR(255) NOT NULL,
       last_name VARCHAR(255) NOT NULL,
@@ -74,6 +73,89 @@ function createUsersTable() {
     )
   `;
   
+  // Create players table
+  const createPlayersTable = `
+    CREATE TABLE IF NOT EXISTS players (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      name VARCHAR(255) NOT NULL,
+      team VARCHAR(255) NOT NULL,
+      position ENUM('Forward', 'Midfielder', 'Defender', 'Goalkeeper') NOT NULL,
+      age INT NOT NULL,
+      nationality VARCHAR(100),
+      goals INT DEFAULT 0,
+      assists INT DEFAULT 0,
+      appearances INT DEFAULT 0,
+      games_played INT DEFAULT 0,
+      yellow_cards INT DEFAULT 0,
+      red_cards INT DEFAULT 0,
+      avatar VARCHAR(500),
+      join_date DATE,
+      previous_team VARCHAR(255),
+      jersey_number INT,
+      height INT,
+      weight INT,
+      performance INT DEFAULT 0,
+      medical_notes TEXT,
+      email VARCHAR(255),
+      phone VARCHAR(20),
+      emergency_contact_name VARCHAR(255),
+      emergency_contact_phone VARCHAR(20),
+      status VARCHAR(50) DEFAULT 'Active',
+      rating DECIMAL(3,1) DEFAULT 0.0,
+      matches_played INT DEFAULT 0,
+      medical_status VARCHAR(50) DEFAULT 'Fit',
+      clean_sheets INT DEFAULT 0,
+      saves INT DEFAULT 0,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )
+  `;
+  
+  // Create teams table
+  const createTeamsTable = `
+    CREATE TABLE IF NOT EXISTS teams (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      name VARCHAR(255) NOT NULL UNIQUE,
+      played INT DEFAULT 0,
+      wins INT DEFAULT 0,
+      draws INT DEFAULT 0,
+      losses INT DEFAULT 0,
+      goals_for INT DEFAULT 0,
+      goals_against INT DEFAULT 0,
+      goal_difference INT DEFAULT 0,
+      points INT DEFAULT 0,
+      form VARCHAR(15),
+      trend ENUM('up', 'down', 'same') DEFAULT 'same',
+      position INT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )
+  `;
+  
+  // Create fixtures table
+  const createFixturesTable = `
+    CREATE TABLE IF NOT EXISTS fixtures (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      home_team VARCHAR(255) NOT NULL,
+      away_team VARCHAR(255) NOT NULL,
+      league VARCHAR(100) DEFAULT 'Premier League',
+      date DATE NOT NULL,
+      time TIME NOT NULL,
+      venue VARCHAR(255),
+      status ENUM('upcoming', 'live', 'final', 'PENDING', 'COMPLETED', 'APPROVED', 'REJECTED') DEFAULT 'upcoming',
+      round VARCHAR(50),
+      home_score INT,
+      away_score INT,
+      attendance INT,
+      highlights TEXT,
+      created_by VARCHAR(255),
+      submitted_date DATE,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )
+  `;
+  
+  // Execute table creation queries
   db.query(createUsersTable, (err) => {
     if (err) {
       console.error('Error creating users table:', err);
@@ -89,6 +171,30 @@ function createUsersTable() {
           console.log('✅ Role enum updated to include scout');
         }
       });
+    }
+  });
+  
+  db.query(createPlayersTable, (err) => {
+    if (err) {
+      console.error('Error creating players table:', err);
+    } else {
+      console.log('✅ players table created successfully');
+    }
+  });
+  
+  db.query(createTeamsTable, (err) => {
+    if (err) {
+      console.error('Error creating teams table:', err);
+    } else {
+      console.log('✅ teams table created successfully');
+    }
+  });
+  
+  db.query(createFixturesTable, (err) => {
+    if (err) {
+      console.error('Error creating fixtures table:', err);
+    } else {
+      console.log('✅ fixtures table created successfully');
     }
   });
 }
@@ -456,14 +562,99 @@ app.delete('/api/users/:id', (req, res) => {
   });
 });
 
+// Players endpoints
+app.get('/api/players', (req, res) => {
+  console.log('🏃 Getting all players');
+  const query = 'SELECT * FROM players ORDER BY name';
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error('❌ Error fetching players:', err);
+      return res.status(500).json({ error: 'Database error: ' + err.message });
+    }
+    console.log(`✅ Found ${results.length} players`);
+    res.json(results);
+  });
+});
+
+app.get('/api/players/:id', (req, res) => {
+  const { id } = req.params;
+  console.log('🏃 Getting player:', id);
+  const query = 'SELECT * FROM players WHERE id = ?';
+  db.query(query, [id], (err, results) => {
+    if (err) {
+      console.error('❌ Error fetching player:', err);
+      return res.status(500).json({ error: 'Database error: ' + err.message });
+    }
+    if (results.length === 0) {
+      return res.status(404).json({ error: 'Player not found' });
+    }
+    res.json(results[0]);
+  });
+});
+
+// Teams endpoints
+app.get('/api/teams', (req, res) => {
+  console.log('⚽ Getting all teams');
+  const query = 'SELECT * FROM teams ORDER BY position';
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error('❌ Error fetching teams:', err);
+      return res.status(500).json({ error: 'Database error: ' + err.message });
+    }
+    console.log(`✅ Found ${results.length} teams`);
+    res.json(results);
+  });
+});
+
+app.get('/api/standings', (req, res) => {
+  console.log('📊 Getting league standings');
+  const query = 'SELECT * FROM teams ORDER BY position';
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error('❌ Error fetching standings:', err);
+      return res.status(500).json({ error: 'Database error: ' + err.message });
+    }
+    res.json(results);
+  });
+});
+
+// Fixtures endpoints
+app.get('/api/fixtures', (req, res) => {
+  console.log('📅 Getting all fixtures');
+  const query = 'SELECT * FROM fixtures ORDER BY date, time';
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error('❌ Error fetching fixtures:', err);
+      return res.status(500).json({ error: 'Database error: ' + err.message });
+    }
+    console.log(`✅ Found ${results.length} fixtures`);
+    res.json(results);
+  });
+});
+
+app.get('/api/results', (req, res) => {
+  console.log('🏆 Getting match results');
+  const query = 'SELECT * FROM fixtures WHERE status = "final" ORDER BY date DESC';
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error('❌ Error fetching results:', err);
+      return res.status(500).json({ error: 'Database error: ' + err.message });
+    }
+    res.json(results);
+  });
+});
+
 // Start server
 app.listen(PORT, () => {
   console.log(`🚀 Backend server running on port ${PORT}`);
-  console.log(`📊 Database: sql10801236`);
+  console.log(`📊 Database: nwusoccer (localhost)`);
   console.log(`🔗 Test endpoint: http://localhost:${PORT}/api/test`);
   console.log(`📝 Register endpoint: http://localhost:${PORT}/api/register`);
   console.log(`🔐 Login endpoint: http://localhost:${PORT}/api/login`);
   console.log(`👥 Users endpoint: http://localhost:${PORT}/api/users`);
+  console.log(`🏃 Players endpoint: http://localhost:${PORT}/api/players`);
+  console.log(`⚽ Teams endpoint: http://localhost:${PORT}/api/teams`);
+  console.log(`📅 Fixtures endpoint: http://localhost:${PORT}/api/fixtures`);
 });
 
 module.exports = app;
