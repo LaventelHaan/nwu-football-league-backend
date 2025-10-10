@@ -34,18 +34,19 @@ const getAutomaticLiveMatches = (fixtures: any[]) => {
   const now = new Date()
   const currentTime = now.getTime()
 
-  console.log("[v0] Current time:", now.toLocaleString())
-
   return fixtures
     .map((fixture) => {
       // Parse fixture date and time
       const fixtureDateTime = new Date(`${fixture.date}T${fixture.time}:00`)
-      const fixtureEndTime = new Date(fixtureDateTime.getTime() + fixture.duration * 60 * 1000)
+      const fixtureEndTime = new Date(fixtureDateTime.getTime() + (fixture.duration || 90) * 60 * 1000);
 
       const fixtureStartTime = fixtureDateTime.getTime()
       const fixtureEndTimeMs = fixtureEndTime.getTime()
 
       console.log(`[v0] Checking fixture ${fixture.homeTeam} vs ${fixture.awayTeam}:`)
+      console.log(`[v0] - Start: ${new Date(fixtureStartTime).toLocaleString()}`)
+      console.log(`[v0] - End: ${new Date(fixtureEndTimeMs).toLocaleString()}`)
+      console.log(`[v0] - Is Live: ${Date.now() >= fixtureStartTime && Date.now() <= fixtureEndTimeMs}`)
       console.log(`[v0] - Start: ${fixtureDateTime.toLocaleString()}`)
       console.log(`[v0] - End: ${fixtureEndTime.toLocaleString()}`)
       console.log(`[v0] - Is Live: ${currentTime >= fixtureStartTime && currentTime <= fixtureEndTimeMs}`)
@@ -59,7 +60,7 @@ const getAutomaticLiveMatches = (fixtures: any[]) => {
           id: fixture.id,
           homeScore: Math.floor(Math.random() * 4), // Mock dynamic scores
           awayScore: Math.floor(Math.random() * 4),
-          minute: Math.min(elapsedMinutes, fixture.duration),
+          minute: Math.min(elapsedMinutes, fixture.duration || 90),
           status: "live",
           events: {
             corners: {
@@ -206,7 +207,7 @@ export default function HomePage() {
                       <div className="flex items-center space-x-2 text-muted-foreground">
                         <Clock className="w-4 h-4" />
                         <span className="font-semibold">
-                          {match.minute >= match.duration ? `${match.duration}' FT` : `${match.minute}'`}
+                          {match.minute >= (match.duration || 90) ? `${match.duration || 90}' FT` : `${match.minute}'`}
                         </span>
                       </div>
                     </div>

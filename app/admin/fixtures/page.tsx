@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -27,7 +27,6 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 
-import { mockFixtures } from "@/lib/mockData" 
 // Mock fixture data with enhanced match results and statistics
 
 const statusOptions = ["ALL", "PENDING", "APPROVED", "REJECTED", "COMPLETED"]
@@ -45,7 +44,7 @@ const teamOptions = [
 ]
 
 export default function FixtureManagement() {
-  const [fixtures, setFixtures] = useState(mockFixtures)
+  const [fixtures, setFixtures] = useState<any[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("ALL")
   const [leagueFilter, setLeagueFilter] = useState("ALL")
@@ -68,11 +67,32 @@ export default function FixtureManagement() {
     notes: "",
   })
 
+  useEffect(() => {
+    const fetchFixtures = async () => {
+      try {
+        console.log('🔄 Fetching fixtures from API...');
+        const response = await fetch('http://localhost:3002/api/fixtures');
+        if (response.ok) {
+          const data = await response.json();
+          console.log('✅ Fixtures fetched successfully:', data.length, 'fixtures');
+          console.log('📋 First fixture:', data[0]);
+          setFixtures(data);
+        } else {
+          console.error('❌ Failed to fetch fixtures:', response.status);
+        }
+      } catch (error) {
+        console.error('❌ Error fetching fixtures:', error);
+      }
+    };
+
+    fetchFixtures();
+  }, []);
+
   const filteredFixtures = fixtures.filter((fixture) => {
     const matchesSearch =
-      fixture.homeTeam.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      fixture.awayTeam.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      fixture.venue.toLowerCase().includes(searchTerm.toLowerCase())
+      (fixture.home_team?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+      (fixture.away_team?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+      (fixture.venue?.toLowerCase() || '').includes(searchTerm.toLowerCase())
     const matchesStatus = statusFilter === "ALL" || fixture.status === statusFilter
     const matchesLeague = leagueFilter === "ALL" || fixture.league === leagueFilter
 
@@ -87,8 +107,8 @@ export default function FixtureManagement() {
   const handleEditResults = (fixture: any) => {
     setEditingResults({
       ...fixture,
-      homeScore: fixture.homeScore || 0,
-      awayScore: fixture.awayScore || 0,
+      homeScore: fixture.home_score || 0,
+      awayScore: fixture.away_score || 0,
       matchStats: fixture.matchStats || {
         attendance: 0,
         duration: "90",
@@ -136,36 +156,64 @@ export default function FixtureManagement() {
     setSelectedFixture(null)
     setApprovalNotes("")
   }
-const handleAddFixture = () => {
-  const fixtureToAdd: Fixture = {
-    id: fixtures.length + 1, // generate unique ID
-    homeTeam: newFixture.homeTeam,
-    awayTeam: newFixture.awayTeam,
-    league: newFixture.league,
-    date: newFixture.date,
-    time: newFixture.time,
-    venue: newFixture.venue,
-    status: "PENDING",       // default status
-    round: "TBD",            // default or calculate dynamically
-    createdBy: "Admin",      // or current user
-    submittedDate: new Date().toISOString().split("T")[0], // today's date
-  };
+const handleAddFixture = async () => {
+  try {
+    const response = await fetch('http://localhost:3002/api/fixtures', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        homeTeam: newFixture.homeTeam,
+        awayTeam: newFixture.awayTeam,
+        league: newFixture.league,
+        date: newFixture.date,
+        time: newFixture.time,
+        venue: newFixture.venue,
+        referee: newFixture.referee,
+        notes: newFixture.notes,
+      }),
+    });
 
-  // Update fixtures state
-  setFixtures([...fixtures, fixtureToAdd]);
+    if (!response.ok) {
+      throw new Error('Failed to create fixture');
+    }
 
-  // Close dialog and reset form
-  setIsCreateDialogOpen(false);
-  setNewFixture({
-    homeTeam: "",
-    awayTeam: "",
-    league: "",
-    date: "",
-    time: "",
-    venue: "",
-    referee: "",
-    notes: "",
-  });
+    const result = await response.json();
+
+    // Add the new fixture to the local state for immediate UI update
+    setFixtures([...fixtures, {
+      id: result.fixtureId,
+      home_team: newFixture.homeTeam,
+      away_team: newFixture.awayTeam,
+      league: newFixture.league,
+      date: newFixture.date,
+      time: newFixture.time,
+      venue: newFixture.venue,
+      referee: newFixture.referee,
+      notes: newFixture.notes,
+      status: 'PENDING',
+      round: 'TBD',
+      created_by: 'Admin',
+      submitted_date: new Date().toISOString().split('T')[0],
+    }]);
+
+    // Close dialog and reset form
+    setIsCreateDialogOpen(false);
+    setNewFixture({
+      homeTeam: '',
+      awayTeam: '',
+      league: '',
+      date: '',
+      time: '',
+      venue: '',
+      referee: '',
+      notes: '',
+    });
+  } catch (error) {
+    console.error('❌ Error creating fixture:', error);
+    // You might want to show an error message to the user here
+  }
 };
 
   const getStatusColor = (status: string) => {
@@ -291,19 +339,19 @@ const handleAddFixture = () => {
         <div className="flex items-center justify-between">
           <div className="flex-1">
             <div className="flex items-center space-x-4 mb-3">
-              <div className="text-lg font-semibold text-center min-w-[120px]">{fixture.homeTeam}</div>
+              <div className="text-lg font-semibold text-center min-w-[120px]">{fixture.home_team}</div>
               <div className="text-2xl font-bold text-muted-foreground">VS</div>
-              <div className="text-lg font-semibold text-center min-w-[120px]">{fixture.awayTeam}</div>
+              <div className="text-lg font-semibold text-center min-w-[120px]">{fixture.away_team}</div>
               {fixture.status === "final" && (
                 <div className="text-xl font-bold text-primary">
-                  {fixture.homeScore} - {fixture.awayScore}
+                  {fixture.home_score} - {fixture.away_score}
                 </div>
               )}
             </div>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm text-muted-foreground">
               <div className="flex items-center">
                 <Calendar className="w-4 h-4 mr-2" />
-                {fixture.date} at {fixture.time}
+                {new Date(fixture.date).toLocaleDateString()} at {fixture.time}
               </div>
               <div className="flex items-center">
                 <MapPin className="w-4 h-4 mr-2" />
@@ -317,7 +365,6 @@ const handleAddFixture = () => {
               )}
             </div>
 
-            {/* Attendance and Highlights for completed fixtures */}
             {fixture.status === "final" && (
               <div className="mt-2 text-sm text-muted-foreground">
                 {fixture.attendance && <span>Attendance: {fixture.attendance}</span>}
@@ -389,12 +436,12 @@ const handleAddFixture = () => {
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
                         <div className="flex items-center space-x-4 mb-3">
-                          <div className="text-lg font-semibold">{fixture.homeTeam}</div>
+                          <div className="text-lg font-semibold">{fixture.home_team}</div>
                           <div className="text-xl font-bold text-muted-foreground">VS</div>
-                          <div className="text-lg font-semibold">{fixture.awayTeam}</div>
+                          <div className="text-lg font-semibold">{fixture.away_team}</div>
                         </div>
                         <div className="text-sm text-muted-foreground">
-                          Submitted by {fixture.createdBy} on {fixture.submittedDate}
+                          Submitted by {fixture.created_by} on {fixture.submitted_date}
                         </div>
                       </div>
                       <div className="flex space-x-2">
@@ -427,14 +474,14 @@ const handleAddFixture = () => {
                     <div className="flex items-center justify-between">
                       <div className="flex-1">
                         <div className="flex items-center space-x-4 mb-3">
-                          <div className="text-lg font-semibold">{fixture.homeTeam}</div>
+                          <div className="text-lg font-semibold">{fixture.home_team}</div>
                           <div className="text-xl font-bold text-muted-foreground">VS</div>
-                          <div className="text-lg font-semibold">{fixture.awayTeam}</div>
+                          <div className="text-lg font-semibold">{fixture.away_team}</div>
                         </div>
                         <div className="flex items-center space-x-4 text-sm text-muted-foreground">
                           <div className="flex items-center">
                             <Calendar className="w-4 h-4 mr-2" />
-                            {fixture.date} at {fixture.time}
+                            {new Date(fixture.date).toLocaleDateString()} at {fixture.time}
                           </div>
                           <div className="flex items-center">
                             <MapPin className="w-4 h-4 mr-2" />
@@ -467,14 +514,14 @@ const handleAddFixture = () => {
           <div className="flex items-center justify-between">
             <div className="flex-1">
               <div className="flex items-center space-x-4 mb-3">
-                <div className="text-lg font-semibold">{fixture.homeTeam}</div>
+                <div className="text-lg font-semibold">{fixture.home_team}</div>
                 <div className="text-2xl font-bold text-primary">
-                  {fixture.homeScore} - {fixture.awayScore}
+                  {fixture.home_score} - {fixture.away_score}
                 </div>
-                <div className="text-lg font-semibold">{fixture.awayTeam}</div>
+                <div className="text-lg font-semibold">{fixture.away_team}</div>
               </div>
               <div className="text-sm text-muted-foreground">
-                {fixture.date} at {fixture.venue}
+                {new Date(fixture.date).toLocaleDateString()} at {fixture.venue}
                 {fixture.attendance && (
                   <span className="ml-4">• Attendance: {fixture.attendance}</span>
                 )}
@@ -526,15 +573,15 @@ const handleAddFixture = () => {
             <div className="space-y-6">
               <div className="text-center">
                 <div className="flex items-center justify-center space-x-4 mb-4">
-                  <div className="text-xl font-bold">{selectedFixture.homeTeam}</div>
+                  <div className="text-xl font-bold">{selectedFixture.home_team}</div>
                   {selectedFixture.status === "COMPLETED" ? (
                     <div className="text-3xl font-bold text-primary">
-                      {selectedFixture.homeScore} - {selectedFixture.awayScore}
+                      {selectedFixture.home_score} - {selectedFixture.away_score}
                     </div>
                   ) : (
                     <div className="text-2xl font-bold text-muted-foreground">VS</div>
                   )}
-                  <div className="text-xl font-bold">{selectedFixture.awayTeam}</div>
+                  <div className="text-xl font-bold">{selectedFixture.away_team}</div>
                 </div>
                 <Badge variant="outline" className={getStatusColor(selectedFixture.status)}>
                   {selectedFixture.status}
@@ -545,7 +592,7 @@ const handleAddFixture = () => {
                 <div>
                   <Label className="text-sm font-medium">Date & Time</Label>
                   <p className="text-sm">
-                    {selectedFixture.date} at {selectedFixture.time}
+                    {new Date(selectedFixture.date).toLocaleDateString()} at {selectedFixture.time}
                   </p>
                 </div>
                 <div>
@@ -583,13 +630,13 @@ const handleAddFixture = () => {
 
                   <div className="grid grid-cols-3 gap-4">
                     <div className="text-center">
-                      <h4 className="font-medium">{selectedFixture.homeTeam}</h4>
+                      <h4 className="font-medium">{selectedFixture.home_team}</h4>
                     </div>
                     <div className="text-center">
                       <h4 className="font-medium">Statistics</h4>
                     </div>
                     <div className="text-center">
-                      <h4 className="font-medium">{selectedFixture.awayTeam}</h4>
+                      <h4 className="font-medium">{selectedFixture.away_team}</h4>
                     </div>
                   </div>
 
@@ -636,7 +683,7 @@ const handleAddFixture = () => {
                             </Badge>
                             <span className="font-medium">{event.player}</span>
                             <span className="text-sm text-muted-foreground">
-                              ({event.team === "home" ? selectedFixture.homeTeam : selectedFixture.awayTeam})
+                              ({event.team === "home" ? selectedFixture.home_team : selectedFixture.away_team})
                             </span>
                           </div>
                           <p className="text-sm text-muted-foreground mt-1">{event.description}</p>
@@ -657,11 +704,11 @@ const handleAddFixture = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <Label className="text-sm font-medium">Created By</Label>
-                  <p className="text-sm">{selectedFixture.createdBy}</p>
+                  <p className="text-sm">{selectedFixture.created_by}</p>
                 </div>
                 <div>
                   <Label className="text-sm font-medium">Submitted Date</Label>
-                  <p className="text-sm">{selectedFixture.submittedDate}</p>
+                  <p className="text-sm">{selectedFixture.submitted_date}</p>
                 </div>
               </div>
 
@@ -687,16 +734,16 @@ const handleAddFixture = () => {
             <div className="space-y-6">
               <div className="text-center">
                 <div className="flex items-center justify-center space-x-4 mb-4">
-                  <div className="text-lg font-bold">{editingResults.homeTeam}</div>
+                  <div className="text-lg font-bold">{editingResults.home_team}</div>
                   <div className="text-xl font-bold text-muted-foreground">VS</div>
-                  <div className="text-lg font-bold">{editingResults.awayTeam}</div>
+                  <div className="text-lg font-bold">{editingResults.away_team}</div>
                 </div>
               </div>
 
               {/* Score Input */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="homeScore">{editingResults.homeTeam} Score</Label>
+                  <Label htmlFor="homeScore">{editingResults.home_team} Score</Label>
                   <Input
                     id="homeScore"
                     type="number"
@@ -711,7 +758,7 @@ const handleAddFixture = () => {
                   />
                 </div>
                 <div>
-                  <Label htmlFor="awayScore">{editingResults.awayTeam} Score</Label>
+                  <Label htmlFor="awayScore">{editingResults.away_team} Score</Label>
                   <Input
                     id="awayScore"
                     type="number"
@@ -788,7 +835,7 @@ const handleAddFixture = () => {
                 <h3 className="text-lg font-semibold">Team Statistics</h3>
                 <div className="grid grid-cols-2 gap-6">
                   <div>
-                    <h4 className="font-medium mb-3">{editingResults.homeTeam}</h4>
+                    <h4 className="font-medium mb-3">{editingResults.home_team}</h4>
                     <div className="space-y-2">
                       {Object.keys(editingResults.matchStats?.homeStats || {}).map((stat) => (
                         <div key={stat}>
@@ -816,7 +863,7 @@ const handleAddFixture = () => {
                     </div>
                   </div>
                   <div>
-                    <h4 className="font-medium mb-3">{editingResults.awayTeam}</h4>
+                    <h4 className="font-medium mb-3">{editingResults.away_team}</h4>
                     <div className="space-y-2">
                       {Object.keys(editingResults.matchStats?.awayStats || {}).map((stat) => (
                         <div key={stat}>
@@ -1008,7 +1055,7 @@ const handleAddFixture = () => {
             <p className="text-sm text-muted-foreground">
               Are you sure you want to {approvalAction} the fixture between{" "}
               <strong>
-                {selectedFixture?.homeTeam} vs {selectedFixture?.awayTeam}
+                {selectedFixture?.home_team} vs {selectedFixture?.away_team}
               </strong>
               ?
             </p>

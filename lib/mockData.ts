@@ -89,6 +89,8 @@ export interface Fixture {
   time: string;
   league: string;
   venue: string;
+  referee?: string;
+  notes?: string;
 
   // Status can now include PENDING for approval workflows
   status: "upcoming" | "live" | "final" | "PENDING"| "COMPLETED"|"APPROVED"| "REJECTED";
@@ -102,6 +104,7 @@ export interface Fixture {
   // New properties for approval tracking
   createdBy?: string;       // Who submitted the fixture
   submittedDate?: string;   // When it was submitted
+  duration?: number; // Match duration in minutes
 }
 
 // src/types.ts
@@ -642,10 +645,10 @@ export const mockTeams: Team[] = [
 
 // Fixtures
 export const mockFixtures: Fixture[] = [
-  { id: 1, homeTeam: "NWU Eagles", awayTeam: "Wits Wolves", league: "Premier League", date: "2024-01-15", time: "15:00", venue: "NWU Stadium", status: "PENDING", round: "Round 19", createdBy: "Admin", submittedDate: "2025-09-18" },
-  { id: 2, homeTeam: "UCT Lions", awayTeam: "UP Tuks", league: "Premier League", date: "2024-01-15", time: "17:30", venue: "UCT Grounds", status: "upcoming", round: "Round 19", createdBy: "John", submittedDate: "2025-09-18" },
-  { id: 3, homeTeam: "UJ Orange", awayTeam: "Stellenbosch FC", league: "Premier League", date: "2024-01-16", time: "14:00", venue: "UJ Stadium", status: "PENDING", round: "Round 19", createdBy: "Mary", submittedDate: "2025-09-17" },
-  { id: 4, homeTeam: "Rhodes United", awayTeam: "UKZN Sharks", league: "Premier League", date: "2024-01-16", time: "16:30", venue: "Rhodes Park", status: "upcoming", round: "Round 19", createdBy: "Alex", submittedDate: "2025-09-16" },
+  { id: 1, homeTeam: "NWU Eagles", awayTeam: "Wits Wolves", league: "Premier League", date: "2024-01-15", time: "15:00", venue: "NWU Stadium", status: "PENDING", round: "Round 19", createdBy: "Admin", submittedDate: "2025-09-18", duration: 90 },
+  { id: 2, homeTeam: "UCT Lions", awayTeam: "UP Tuks", league: "Premier League", date: "2024-01-15", time: "17:30", venue: "UCT Grounds", status: "upcoming", round: "Round 19", createdBy: "John", submittedDate: "2025-09-18", duration: 90 },
+  { id: 3, homeTeam: "UJ Orange", awayTeam: "Stellenbosch FC", league: "Premier League", date: "2024-01-16", time: "14:00", venue: "UJ Stadium", status: "PENDING", round: "Round 19", createdBy: "Mary", submittedDate: "2025-09-17", duration: 90 },
+  { id: 4, homeTeam: "Rhodes United", awayTeam: "UKZN Sharks", league: "Premier League", date: "2024-01-16", time: "16:30", venue: "Rhodes Park", status: "upcoming", round: "Round 19", createdBy: "Alex", submittedDate: "2025-09-16", duration: 90 },
 ];
 
 

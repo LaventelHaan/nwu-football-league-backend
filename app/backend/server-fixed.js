@@ -1,13 +1,16 @@
 const express = require('express');
 const mysql = require('mysql2');
 const cors = require('cors');
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
+const PORT = process.env.PORT || 3002;
 
 const app = express();
-const PORT = process.env.PORT || 3002;
 
 // Middleware
 app.use(cors());
 app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 // Database connection
 const db = mysql.createConnection({
@@ -142,6 +145,8 @@ function createUsersTable() {
       date DATE NOT NULL,
       time TIME NOT NULL,
       venue VARCHAR(255),
+      referee VARCHAR(255),
+      notes TEXT,
       status ENUM('upcoming', 'live', 'final', 'PENDING', 'COMPLETED', 'APPROVED', 'REJECTED') DEFAULT 'upcoming',
       round VARCHAR(50),
       home_score INT,
@@ -195,6 +200,32 @@ function createUsersTable() {
       console.error('Error creating fixtures table:', err);
     } else {
       console.log('✅ fixtures table created successfully');
+      
+      // Check if fixtures table is empty and seed with mock data if so
+      db.query('SELECT COUNT(*) as count FROM fixtures', (countErr, countResult) => {
+        if (countErr) {
+          console.error('Error checking fixtures count:', countErr);
+        } else if (countResult[0].count === 0) {
+          // Only seed if table is empty
+          const seedFixtures = `
+            INSERT INTO fixtures (home_team, away_team, league, date, time, venue, status, round, created_by, submitted_date) VALUES
+            ('NWU Eagles', 'Wits Wolves', 'Premier League', '2024-01-15', '15:00', 'NWU Stadium', 'PENDING', 'Round 19', 'Admin', '2025-09-18'),
+            ('UCT Lions', 'UP Tuks', 'Premier League', '2024-01-15', '17:30', 'UCT Grounds', 'upcoming', 'Round 19', 'John', '2025-09-18'),
+            ('UJ Orange', 'Stellenbosch FC', 'Premier League', '2024-01-16', '14:00', 'UJ Stadium', 'PENDING', 'Round 19', 'Mary', '2025-09-17'),
+            ('Rhodes United', 'UKZN Sharks', 'Premier League', '2024-01-16', '16:30', 'Rhodes Park', 'upcoming', 'Round 19', 'Alex', '2025-09-16')
+          `;
+          
+          db.query(seedFixtures, (seedErr) => {
+            if (seedErr) {
+              console.error('Error seeding fixtures:', seedErr);
+            } else {
+              console.log('✅ fixtures table seeded with mock data');
+            }
+          });
+        } else {
+          console.log('✅ fixtures table already contains data, skipping seed');
+        }
+      });
     }
   });
 }
@@ -671,6 +702,81 @@ app.get('/api/fixtures', (req, res) => {
     console.log(`✅ Found ${results.length} fixtures`);
     res.json(results);
   });
+});
+
+app.post('/api/fixtures', (req, res) => {
+  console.log('➕ Creating new fixture:', req.body);
+  
+  try {
+    const { homeTeam, awayTeam, league, date, time, venue, referee, notes } = req.body;
+    
+    if (!homeTeam || !awayTeam || !date || !time) {
+      console.log('❌ Missing required fields');
+      return res.status(400).json({ 
+        error: 'Home team, away team, date, and time are required',
+        received: { homeTeam, awayTeam, league, date, time, venue, referee, notes }
+      });
+    }
+    
+    console.log('✅ All required fields present');
+    
+    // Insert into fixtures table
+    const insertFixtureQuery = `
+      INSERT INTO fixtures (home_team, away_team, league, date, time, venue, referee, notes, status, created_by, submitted_date)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, 'PENDING', 'Admin', ?)
+    `;
+    
+    const fixtureValues = [
+      homeTeam,
+      awayTeam,
+      league || 'Premier League',
+      date,
+      time,
+      venue || null,
+      referee || null,
+      notes || null,
+      new Date().toISOString().split('T')[0] // submitted_date
+    ];
+    
+    console.log('📝 Inserting into fixtures table with values:', fixtureValues);
+    
+    db.query(insertFixtureQuery, fixtureValues, (err, result) => {
+      if (err) {
+        console.error('❌ Error inserting into fixtures table:', err);
+        return res.status(500).json({ 
+          error: 'Error creating fixture: ' + err.message,
+          details: err
+        });
+      }
+      
+      console.log('✅ Successfully inserted into fixtures table, ID:', result.insertId);
+      
+      res.status(201).json({ 
+        message: 'Fixture created successfully',
+        fixtureId: result.insertId,
+        fixture: {
+          id: result.insertId,
+          homeTeam,
+          awayTeam,
+          league: league || 'Premier League',
+          date,
+          time,
+          venue,
+          referee,
+          notes,
+          status: 'PENDING',
+          createdBy: 'Admin',
+          submittedDate: new Date().toISOString().split('T')[0]
+        }
+      });
+    });
+  } catch (error) {
+    console.error('❌ Fixture creation error:', error);
+    res.status(500).json({ 
+      error: 'Internal server error: ' + error.message,
+      details: error
+    });
+  }
 });
 
 app.get('/api/results', (req, res) => {
