@@ -71,7 +71,7 @@ export default function FixtureManagement() {
     const fetchFixtures = async () => {
       try {
         console.log('🔄 Fetching fixtures from API...');
-        const response = await fetch('http://localhost:3002/api/fixtures');
+        const response = await fetch('/api/fixtures');
         if (response.ok) {
           const data = await response.json();
           console.log('✅ Fixtures fetched successfully:', data.length, 'fixtures');
@@ -158,7 +158,7 @@ export default function FixtureManagement() {
   }
 const handleAddFixture = async () => {
   try {
-    const response = await fetch('http://localhost:3002/api/fixtures', {
+    const response = await fetch('/api/fixtures', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

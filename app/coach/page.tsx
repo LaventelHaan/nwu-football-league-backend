@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useAuth } from "@/hooks/use-auth"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Sidebar } from "@/app/coach/layout/layout"
@@ -13,7 +13,7 @@ import { AnnouncementsList } from "@/app/coach/announcement/announcements-list"
 import { UpcomingMatches } from "@/app/coach/matches/upcoming-matches"
 import { TeamStatsComponent } from "@/app/coach/team/team-stats"
 import { LeagueStandings } from "@/app/coach/league/league-standings"
-import  FieldBookingComponent  from "@/app/coach/field-booking/page"
+import FieldBookingComponent from "@/components/ui/field-booking"
 import { PlayerRequests } from "@/app/coach/requests/player-requests"
 import  MatchesOverview from "@/app/coach/matches/matches-overview"
 import { MedicalRecords } from "@/app/coach/medical/medical-records"
@@ -107,12 +107,35 @@ export default function CoachDashboard() {
   }
 
   // Handlers for new features
-  const handleCreateBooking = (bookingData: Omit<FieldBooking, "id">) => {
-    const newBooking: FieldBooking = {
-      ...bookingData,
-      id: Date.now().toString(),
+  const handleCreateBooking = async (bookingData: Omit<FieldBooking, "id">) => {
+    try {
+      // Generate a unique ID for the booking
+      const bookingId = `booking_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+
+      const response = await fetch('/api/field-bookings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: bookingId,
+          ...bookingData,
+        }),
+      });
+
+      if (response.ok) {
+        console.log('Field booking created successfully');
+        // Refresh the bookings list
+        fetchFieldBookings();
+      } else {
+        const error = await response.json();
+        console.error('Error creating field booking:', error);
+        alert(error.error || 'Error creating field booking');
+      }
+    } catch (error) {
+      console.error('Error creating field booking:', error);
+      alert('Error creating field booking');
     }
-    setFieldBookings([...fieldBookings, newBooking])
   }
 
   const handleUpdateRequest = (id: string, status: PlayerRequest["status"], notes?: string) => {
@@ -121,17 +144,112 @@ export default function CoachDashboard() {
     )
   }
 
-  const handleCreateMedicalRecord = (recordData: Omit<MedicalRecord, "id">) => {
-    const newRecord: MedicalRecord = {
-      ...recordData,
-      id: Date.now().toString(),
+  const handleCreateMedicalRecord = async (recordData: Omit<MedicalRecord, "id">) => {
+    try {
+      // Transform the data to match API expectations
+      const apiData = {
+        player_id: recordData.playerId,
+        player_name: players.find(p => p.id === parseInt(recordData.playerId))?.name || '',
+        date: recordData.date,
+        type: recordData.type,
+        description: recordData.description,
+        doctor: recordData.doctor,
+        status: recordData.status,
+        follow_up_date: recordData.followUpDate,
+        restrictions: recordData.restrictions,
+        medications: recordData.medications,
+        created_by: coach?.name || 'Coach'
+      };
+
+      const response = await fetch('/api/medical-records', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(apiData),
+      });
+
+      if (response.ok) {
+        console.log('Medical record created successfully');
+        // Refresh medical records by fetching from API
+        fetchMedicalRecords();
+      } else {
+        const error = await response.json();
+        console.error('Error creating medical record:', error);
+        alert(error.error || 'Error creating medical record');
+      }
+    } catch (error) {
+      console.error('Error creating medical record:', error);
+      alert('Error creating medical record');
     }
-    setMedicalRecords([...medicalRecords, newRecord])
+  };
+
+  const handleUpdateMedicalRecord = async (updatedRecord: MedicalRecord) => {
+    try {
+      const response = await fetch(`/api/medical-records/${updatedRecord.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: updatedRecord.status }),
+      })
+
+      if (response.ok) {
+        console.log('Medical record updated successfully')
+        // Refresh medical records by fetching from API
+        fetchMedicalRecords()
+      } else {
+        const error = await response.json()
+        console.error('Error updating medical record:', error)
+        alert(error.error || 'Error updating medical record')
+      }
+    } catch (error) {
+      console.error('Error updating medical record:', error)
+      alert('Error updating medical record')
+    }
   }
 
-  const handleUpdateMedicalRecord = (updatedRecord: MedicalRecord) => {
-    setMedicalRecords(medicalRecords.map((record) => (record.id === updatedRecord.id ? updatedRecord : record)))
+  // Fetch functions
+  const fetchMedicalRecords = async () => {
+    try {
+      const response = await fetch('/api/medical-records')
+      if (response.ok) {
+        const data = await response.json()
+        // Transform data to match expected format
+        const transformedData = data.map((record: any) => ({
+          ...record,
+          restrictions: record.restrictions ? JSON.parse(record.restrictions) : undefined,
+          medications: record.medications ? JSON.parse(record.medications) : undefined,
+        }))
+        setMedicalRecords(transformedData)
+      } else {
+        console.error('Failed to fetch medical records')
+      }
+    } catch (error) {
+      console.error('Error fetching medical records:', error)
+    }
   }
+
+  const fetchFieldBookings = async () => {
+    try {
+      const response = await fetch('/api/field-bookings')
+      if (response.ok) {
+        const data = await response.json()
+        setFieldBookings(data)
+      } else {
+        console.error('Failed to fetch field bookings')
+      }
+    } catch (error) {
+      console.error('Error fetching field bookings:', error)
+    }
+  }
+
+  // Initialize data on mount
+  useEffect(() => {
+    fetchMedicalRecords()
+    fetchFieldBookings()
+  }, [])
+
   // Render main content based on active tab
   const renderContent = () => {
     switch (activeTab) {
@@ -145,14 +263,14 @@ export default function CoachDashboard() {
 
             <DashboardStats
               players={players}
-              recentMatches={mockRecentMatches}
+              recentMatches={mockRecentMatches as any}
               announcements={announcements}
-              upcomingMatches={mockUpcomingMatches}
+              upcomingMatches={mockUpcomingMatches as any}
             />
 
             <div className="grid gap-6 lg:grid-cols-3">
               <div className="lg:col-span-2">
-                <MatchesOverview upcomingMatches={mockUpcomingMatches} recentMatches={mockRecentMatches} />
+                <MatchesOverview upcomingMatches={mockUpcomingMatches as any} recentMatches={mockRecentMatches as any} />
               </div>
               <div className="space-y-6">
                 <QuickActions onAction={handleQuickAction} />
@@ -208,7 +326,7 @@ export default function CoachDashboard() {
               <h1 className="text-3xl font-bold text-foreground">Match Results</h1>
               <p className="text-muted-foreground">Review your team's recent performance.</p>
             </div>
-            <RecentMatches matches={mockRecentMatches} />
+            <RecentMatches matches={mockRecentMatches as any} />
           </div>
         )
 

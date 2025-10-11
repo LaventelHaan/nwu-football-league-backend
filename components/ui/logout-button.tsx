@@ -24,7 +24,7 @@ export default function LogoutButton({
     
     try {
       // Call logout API
-      const response = await fetch('http://localhost:3002/api/logout', {
+      const response = await fetch('/api/logout', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

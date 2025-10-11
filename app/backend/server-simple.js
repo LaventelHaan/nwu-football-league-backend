@@ -46,6 +46,219 @@ db.connect((err) => {
   });
 });
 
+// Field bookings endpoints
+app.get('/api/field-bookings', (req, res) => {
+  console.log('📅 Getting all field bookings');
+  const query = 'SELECT * FROM field_bookings ORDER BY date, time';
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error('❌ Error fetching field bookings:', err);
+      return res.status(500).json({ error: 'Database error: ' + err.message });
+    }
+    console.log(`✅ Found ${results.length} field bookings`);
+    res.json(results);
+  });
+});
+
+app.post('/api/field-bookings', (req, res) => {
+  console.log('➕ Creating new field booking:', req.body);
+
+  try {
+    const { id, date, time, duration, field, purpose, status, notes, created_by } = req.body;
+
+    if (!id || !date || !time || !duration || !field || !purpose) {
+      console.log('❌ Missing required fields');
+      return res.status(400).json({
+        error: 'Required fields: id, date, time, duration, field, purpose',
+        received: { id, date, time, duration, field, purpose, status, notes, created_by }
+      });
+    }
+
+    console.log('✅ All required fields present');
+
+    const query = `
+      INSERT INTO field_bookings (id, date, time, duration, field, purpose, status, notes, created_by)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+      ON DUPLICATE KEY UPDATE
+      date = VALUES(date),
+      time = VALUES(time),
+      duration = VALUES(duration),
+      field = VALUES(field),
+      purpose = VALUES(purpose),
+      status = VALUES(status),
+      notes = VALUES(notes),
+      updated_at = CURRENT_TIMESTAMP
+    `;
+
+    const values = [
+      id,
+      date,
+      time,
+      duration,
+      field,
+      purpose,
+      status || 'pending',
+      notes || '',
+      created_by || ''
+    ];
+
+    console.log('📝 Inserting into field_bookings table with values:', values);
+
+    db.query(query, values, (err, result) => {
+      if (err) {
+        console.error('❌ Error creating/updating field booking:', err);
+        return res.status(500).json({
+          error: 'Error creating field booking: ' + err.message,
+          details: err
+        });
+      }
+
+      const message = result.affectedRows === 1 && result.insertId > 0
+        ? 'Field booking created successfully'
+        : 'Field booking updated successfully';
+
+      console.log('✅ Successfully created/updated field booking, ID:', id);
+
+      res.status(201).json({
+        message,
+        id: id
+      });
+    });
+  } catch (error) {
+    console.error('❌ Field booking creation error:', error);
+    res.status(500).json({
+      error: 'Internal server error: ' + error.message,
+      details: error
+    });
+  }
+});
+
+// Medical records endpoints
+app.get('/api/medical-records', (req, res) => {
+  console.log('🏥 Getting all medical records');
+  const query = 'SELECT * FROM medical_records ORDER BY date DESC';
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error('❌ Error fetching medical records:', err);
+      return res.status(500).json({ error: 'Database error: ' + err.message });
+    }
+    console.log(`✅ Found ${results.length} medical records`);
+    res.json(results);
+  });
+});
+
+app.post('/api/medical-records', (req, res) => {
+  console.log('➕ Creating new medical record:', req.body);
+
+  try {
+    const {
+      player_id,
+      player_name,
+      date,
+      type,
+      description,
+      doctor,
+      status,
+      follow_up_date,
+      restrictions,
+      medications,
+      created_by
+    } = req.body;
+
+    if (!player_id || !date || !type || !description || !doctor) {
+      console.log('❌ Missing required fields');
+      return res.status(400).json({
+        error: 'Required fields: player_id, date, type, description, doctor',
+        received: { player_id, player_name, date, type, description, doctor, status, follow_up_date, restrictions, medications, created_by }
+      });
+    }
+
+    console.log('✅ All required fields present');
+
+    const query = `
+      INSERT INTO medical_records (player_id, player_name, date, type, description, doctor, status, follow_up_date, restrictions, medications, created_by)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+
+    const values = [
+      player_id,
+      player_name || '',
+      date,
+      type,
+      description,
+      doctor,
+      status || 'active',
+      follow_up_date || null,
+      JSON.stringify(restrictions || []),
+      JSON.stringify(medications || []),
+      created_by || ''
+    ];
+
+    console.log('📝 Inserting into medical_records table with values:', values);
+
+    db.query(query, values, (err, result) => {
+      if (err) {
+        console.error('❌ Error creating medical record:', err);
+        return res.status(500).json({
+          error: 'Error creating medical record: ' + err.message,
+          details: err
+        });
+      }
+
+      console.log('✅ Successfully inserted into medical_records table, ID:', result.insertId);
+
+      res.status(201).json({
+        message: 'Medical record created successfully',
+        id: result.insertId
+      });
+    });
+  } catch (error) {
+    console.error('❌ Medical record creation error:', error);
+    res.status(500).json({
+      error: 'Internal server error: ' + error.message,
+      details: error
+    });
+  }
+});
+
+app.put('/api/medical-records/:id', (req, res) => {
+  const recordId = req.params.id;
+  console.log('✏️ Updating medical record:', recordId, req.body);
+
+  try {
+    const { status } = req.body;
+
+    if (!status) {
+      console.log('❌ Missing status field');
+      return res.status(400).json({ error: 'Status is required' });
+    }
+
+    const query = 'UPDATE medical_records SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?';
+
+    db.query(query, [status, recordId], (err, result) => {
+      if (err) {
+        console.error('❌ Error updating medical record:', err);
+        return res.status(500).json({ error: 'Error updating medical record: ' + err.message });
+      }
+
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ error: 'Medical record not found' });
+      }
+
+      console.log('✅ Medical record updated successfully');
+      res.json({
+        message: 'Medical record updated successfully'
+      });
+    });
+  } catch (error) {
+    console.error('❌ Medical record update error:', error);
+    res.status(500).json({
+      error: 'Internal server error: ' + error.message,
+      details: error
+    });
+  }
+});
+
 // Create tables
 function createTables() {
   // Create login_table
@@ -73,6 +286,43 @@ function createTables() {
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     )
   `;
+
+  // Create field bookings table
+  const createFieldBookingsTable = `
+    CREATE TABLE IF NOT EXISTS field_bookings (
+      id VARCHAR(50) PRIMARY KEY,
+      date DATE NOT NULL,
+      time TIME NOT NULL,
+      duration DECIMAL(3,1) NOT NULL,
+      field VARCHAR(255) NOT NULL,
+      purpose VARCHAR(255) NOT NULL,
+      status ENUM('pending', 'confirmed', 'cancelled') DEFAULT 'pending',
+      notes TEXT,
+      created_by VARCHAR(255),
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )
+  `;
+
+  // Create medical records table
+  const createMedicalRecordsTable = `
+    CREATE TABLE IF NOT EXISTS medical_records (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      player_id VARCHAR(50) NOT NULL,
+      player_name VARCHAR(255),
+      date DATE NOT NULL,
+      type ENUM('checkup', 'injury', 'treatment', 'clearance') NOT NULL,
+      description TEXT NOT NULL,
+      doctor VARCHAR(255) NOT NULL,
+      status ENUM('active', 'resolved', 'ongoing') DEFAULT 'active',
+      follow_up_date DATE,
+      restrictions JSON,
+      medications JSON,
+      created_by VARCHAR(255),
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )
+  `;
   
   db.query(createLoginTable, (err) => {
     if (err) {
@@ -87,6 +337,22 @@ function createTables() {
       console.error('Error creating register_table:', err);
     } else {
       console.log('✅ register_table created successfully');
+    }
+  });
+
+  db.query(createFieldBookingsTable, (err) => {
+    if (err) {
+      console.error('Error creating field_bookings table:', err);
+    } else {
+      console.log('✅ field_bookings table created successfully');
+    }
+  });
+
+  db.query(createMedicalRecordsTable, (err) => {
+    if (err) {
+      console.error('Error creating medical_records table:', err);
+    } else {
+      console.log('✅ medical_records table created successfully');
     }
   });
 }

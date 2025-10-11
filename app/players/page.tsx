@@ -41,7 +41,7 @@ export default function PlayersPage() {
   useEffect(() => {
     const fetchPlayers = async () => {
       try {
-        const response = await fetch('http://localhost:3002/api/players')
+        const response = await fetch('/api/players')
         if (!response.ok) {
           throw new Error('Failed to fetch players')
         }

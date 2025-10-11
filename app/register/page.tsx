@@ -54,8 +54,28 @@ export default function RegisterPage() {
       return
     }
 
+    if (!formData.role) {
+      alert("Please select a role")
+      setIsLoading(false)
+      return
+    }
+
+    // Debug logging
+    console.log('🔍 Form validation passed')
+    console.log('📤 Sending registration data:', {
+      firstName: formData.firstName,
+      lastName: formData.lastName,
+      email: formData.email,
+      phone: formData.phone,
+      dateOfBirth: formData.dateOfBirth,
+      password: '***',
+      role: formData.role || 'NOT SELECTED',
+      team: formData.team || 'NOT SET',
+      position: formData.position || 'NOT SET'
+    })
+
     try {
-      const response = await fetch('http://localhost:3002/api/register', {
+      const response = await fetch('/api/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -67,13 +87,17 @@ export default function RegisterPage() {
           phone: formData.phone,
           dateOfBirth: formData.dateOfBirth,
           password: formData.password,
-          role: formData.role,
+          role: formData.role || 'player', // Default to player if not selected
           team: formData.team || null,
           position: formData.position || null,
         }),
       })
 
+      console.log('📡 API Response status:', response.status)
+      console.log('📡 Response ok:', response.ok)
+
       const data = await response.json()
+      console.log('📡 Response data:', data)
 
       if (response.ok) {
         alert("Registration successful! Please login with your credentials.")
@@ -82,7 +106,7 @@ export default function RegisterPage() {
         alert(data.error || "Registration failed")
       }
     } catch (error) {
-      console.error('Registration error:', error)
+      console.error('❌ Registration error:', error)
       alert("Network error. Please check if the server is running.")
     } finally {
       setIsLoading(false)
@@ -203,8 +227,8 @@ export default function RegisterPage() {
 
                 {/* Role Selection */}
                 <div className="space-y-2">
-                  <Label htmlFor="role">Role</Label>
-                  <Select value={formData.role} onValueChange={(value) => handleInputChange("role", value)}>
+                  <Label htmlFor="role">Role *</Label>
+                  <Select value={formData.role} onValueChange={(value) => handleInputChange("role", value)} required>
                     <SelectTrigger>
                       <SelectValue placeholder="Select your role" />
                     </SelectTrigger>

@@ -200,7 +200,83 @@ function createTables() {
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     )
   `;
-  
+
+  // Create leagues table
+  const createLeaguesTable = `
+    CREATE TABLE IF NOT EXISTS leagues (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      name VARCHAR(255) NOT NULL UNIQUE,
+      description TEXT,
+      status ENUM('active', 'inactive') DEFAULT 'active',
+      total_teams INT DEFAULT 0,
+      total_matches INT DEFAULT 0,
+      current_season VARCHAR(50),
+      champion VARCHAR(255),
+      founded VARCHAR(10),
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )
+  `;
+
+  // Create venues table
+  const createVenuesTable = `
+    CREATE TABLE IF NOT EXISTS venues (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      name VARCHAR(255) NOT NULL,
+      address TEXT NOT NULL,
+      capacity INT NOT NULL,
+      type ENUM('Stadium', 'Multi-purpose', 'Training Ground', 'Indoor Arena') NOT NULL,
+      surface ENUM('Natural Grass', 'Artificial Turf', 'Hybrid Grass', 'Indoor Court') NOT NULL,
+      status ENUM('Active', 'Maintenance', 'Inactive') DEFAULT 'Active',
+      facilities JSON,
+      contact_manager VARCHAR(255),
+      contact_phone VARCHAR(20),
+      contact_email VARCHAR(255),
+      bookings INT DEFAULT 0,
+      last_maintenance DATE,
+      next_maintenance DATE,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )
+  `;
+
+  // Create field_bookings table
+  const createFieldBookingsTable = `
+    CREATE TABLE IF NOT EXISTS field_bookings (
+      id VARCHAR(50) PRIMARY KEY,
+      date DATE NOT NULL,
+      time TIME NOT NULL,
+      duration DECIMAL(3,1) NOT NULL,
+      field VARCHAR(255) NOT NULL,
+      purpose VARCHAR(255) NOT NULL,
+      status ENUM('pending', 'confirmed', 'cancelled') DEFAULT 'pending',
+      notes TEXT,
+      created_by VARCHAR(255),
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )
+  `;
+
+  // Create medical_records table
+  const createMedicalRecordsTable = `
+    CREATE TABLE IF NOT EXISTS medical_records (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      player_id VARCHAR(50) NOT NULL,
+      player_name VARCHAR(255),
+      date DATE NOT NULL,
+      type ENUM('checkup', 'injury', 'treatment', 'clearance') NOT NULL,
+      description TEXT NOT NULL,
+      doctor VARCHAR(255) NOT NULL,
+      status ENUM('active', 'resolved', 'ongoing') DEFAULT 'active',
+      follow_up_date DATE,
+      restrictions JSON,
+      medications JSON,
+      created_by VARCHAR(255),
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )
+  `;
+
   // Execute table creation queries
   db.query(createLoginTable, (err) => {
     if (err) {
@@ -249,7 +325,38 @@ function createTables() {
       console.log('team_registrations table created successfully');
     }
   });
-}
+
+  db.query(createLeaguesTable, (err) => {
+    if (err) {
+      console.error('Error creating leagues table:', err);
+    } else {
+      console.log('leagues table created successfully');
+    }
+  });
+
+  db.query(createVenuesTable, (err) => {
+    if (err) {
+      console.error('Error creating venues table:', err);
+    } else {
+      console.log('venues table created successfully');
+    }
+  });
+
+  db.query(createFieldBookingsTable, (err) => {
+    if (err) {
+      console.error('Error creating field_bookings table:', err);
+    } else {
+      console.log('field_bookings table created successfully');
+    }
+  });
+
+  db.query(createMedicalRecordsTable, (err) => {
+    if (err) {
+      console.error('Error creating medical_records table:', err);
+    } else {
+      console.log('medical_records table created successfully');
+    }
+  });
 
 // Register endpoint
 app.post('/api/register', async (req, res) => {
@@ -467,6 +574,251 @@ app.get('/api/team-registrations', (req, res) => {
       return res.status(500).json({ error: 'Database error' });
     }
     res.json(results);
+  });
+});
+
+// Leagues endpoints
+app.get('/api/leagues', (req, res) => {
+  const query = 'SELECT * FROM leagues ORDER BY name';
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error('Error fetching leagues:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+    res.json(results);
+  });
+});
+
+app.post('/api/leagues', (req, res) => {
+  const { name, description, status, total_teams, total_matches, current_season, champion, founded } = req.body;
+
+  if (!name) {
+    return res.status(400).json({ error: 'League name is required' });
+  }
+
+  const query = `
+    INSERT INTO leagues (name, description, status, total_teams, total_matches, current_season, champion, founded)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+  `;
+
+  const values = [
+    name,
+    description || '',
+    status || 'active',
+    total_teams || 0,
+    total_matches || 0,
+    current_season || '',
+    champion || '',
+    founded || ''
+  ];
+
+  db.query(query, values, (err, result) => {
+    if (err) {
+      console.error('Error creating league:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+    res.status(201).json({ message: 'League created successfully', id: result.insertId });
+  });
+});
+
+// Venues endpoints
+app.get('/api/venues', (req, res) => {
+  const query = 'SELECT * FROM venues ORDER BY name';
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error('Error fetching venues:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+    res.json(results);
+  });
+});
+
+app.post('/api/venues', (req, res) => {
+  const {
+    name,
+    address,
+    capacity,
+    type,
+    surface,
+    status,
+    facilities,
+    contact_manager,
+    contact_phone,
+    contact_email,
+    bookings,
+    last_maintenance,
+    next_maintenance
+  } = req.body;
+
+  if (!name || !address || !capacity || !type || !surface) {
+    return res.status(400).json({ error: 'Required fields: name, address, capacity, type, surface' });
+  }
+
+  const query = `
+    INSERT INTO venues (name, address, capacity, type, surface, status, facilities, contact_manager, contact_phone, contact_email, bookings, last_maintenance, next_maintenance)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `;
+
+  const values = [
+    name,
+    address,
+    capacity,
+    type,
+    surface,
+    status || 'Active',
+    JSON.stringify(facilities || []),
+    contact_manager || '',
+    contact_phone || '',
+    contact_email || '',
+    bookings || 0,
+    last_maintenance || null,
+    next_maintenance || null
+  ];
+
+  db.query(query, values, (err, result) => {
+    if (err) {
+      console.error('Error creating venue:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+    res.status(201).json({ message: 'Venue created successfully', id: result.insertId });
+  });
+});
+
+// Field bookings endpoints
+app.get('/api/field-bookings', (req, res) => {
+  const query = 'SELECT * FROM field_bookings ORDER BY date, time';
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error('Error fetching field bookings:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+    res.json(results);
+  });
+});
+
+app.post('/api/field-bookings', (req, res) => {
+  const { id, date, time, duration, field, purpose, status, notes, created_by } = req.body;
+
+  if (!id || !date || !time || !duration || !field || !purpose) {
+    return res.status(400).json({ error: 'Required fields: id, date, time, duration, field, purpose' });
+  }
+
+  const query = `
+    INSERT INTO field_bookings (id, date, time, duration, field, purpose, status, notes, created_by)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ON DUPLICATE KEY UPDATE
+    date = VALUES(date),
+    time = VALUES(time),
+    duration = VALUES(duration),
+    field = VALUES(field),
+    purpose = VALUES(purpose),
+    status = VALUES(status),
+    notes = VALUES(notes),
+    updated_at = CURRENT_TIMESTAMP
+  `;
+
+  const values = [
+    id,
+    date,
+    time,
+    duration,
+    field,
+    purpose,
+    status || 'pending',
+    notes || '',
+    created_by || ''
+  ];
+
+  db.query(query, values, (err, result) => {
+    if (err) {
+      console.error('Error creating/updating field booking:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+    const message = result.affectedRows === 1 && result.insertId > 0 
+      ? 'Field booking created successfully' 
+      : 'Field booking updated successfully';
+    res.status(201).json({ message, id: id });
+  });
+});
+
+// Medical records endpoints
+app.get('/api/medical-records', (req, res) => {
+  const query = 'SELECT * FROM medical_records ORDER BY date DESC';
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error('Error fetching medical records:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+    res.json(results);
+  });
+});
+
+app.post('/api/medical-records', (req, res) => {
+  const {
+    player_id,
+    player_name,
+    date,
+    type,
+    description,
+    doctor,
+    status,
+    follow_up_date,
+    restrictions,
+    medications,
+    created_by
+  } = req.body;
+
+  if (!player_id || !date || !type || !description || !doctor) {
+    return res.status(400).json({ error: 'Required fields: player_id, date, type, description, doctor' });
+  }
+
+  const query = `
+    INSERT INTO medical_records (player_id, player_name, date, type, description, doctor, status, follow_up_date, restrictions, medications, created_by)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+  `;
+
+  const values = [
+    player_id,
+    player_name || '',
+    date,
+    type,
+    description,
+    doctor,
+    status || 'active',
+    follow_up_date || null,
+    JSON.stringify(restrictions || []),
+    JSON.stringify(medications || []),
+    created_by || ''
+  ];
+
+  db.query(query, values, (err, result) => {
+    if (err) {
+      console.error('Error creating medical record:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+    res.status(201).json({ message: 'Medical record created successfully', id: result.insertId });
+  });
+});
+
+app.put('/api/medical-records/:id', (req, res) => {
+  const { id } = req.params;
+  const { status } = req.body;
+
+  if (!status) {
+    return res.status(400).json({ error: 'Status is required' });
+  }
+
+  const query = 'UPDATE medical_records SET status = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?';
+
+  db.query(query, [status, id], (err, result) => {
+    if (err) {
+      console.error('Error updating medical record:', err);
+      return res.status(500).json({ error: 'Database error' });
+    }
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Medical record not found' });
+    }
+    res.json({ message: 'Medical record updated successfully' });
   });
 });
 

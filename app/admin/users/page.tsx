@@ -350,7 +350,7 @@ export default function UserManagement() {
     try {
       setIsLoading(true)
       setError(null)
-      const response = await fetch('http://localhost:3002/api/users')
+      const response = await fetch('/api/users')
       if (!response.ok) {
         throw new Error('Failed to fetch users')
       }
@@ -374,7 +374,7 @@ export default function UserManagement() {
   const handleAddUser = async (userData: any) => {
     console.log('handleAddUser called with:', userData);
     try {
-      const response = await fetch('http://localhost:3002/api/users', {
+      const response = await fetch('/api/users', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -421,7 +421,7 @@ export default function UserManagement() {
 
   const handleUpdateUser = async (updatedUser: any) => {
     try {
-      const response = await fetch(`http://localhost:3002/api/users/${updatedUser.id}`, {
+      const response = await fetch(`/api/users/${updatedUser.id}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -452,7 +452,7 @@ export default function UserManagement() {
     const newStatus = user.status === "Active" ? "Inactive" : "Active"
 
     try {
-      const response = await fetch(`http://localhost:3002/api/users/${userId}`, {
+      const response = await fetch(`/api/users/${userId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',
@@ -476,7 +476,7 @@ export default function UserManagement() {
     if (!confirm("Are you sure you want to delete this user?")) return
 
     try {
-      const response = await fetch(`http://localhost:3002/api/users/${userId}`, {
+      const response = await fetch(`/api/users/${userId}`, {
         method: 'DELETE',
       })
 

@@ -1,50 +1,72 @@
 "use client"
 
-import { useState } from "react" 
-import  FieldBookingComponent  from "@/components/ui/field-booking"
-
-// Define the FieldBooking type here (or import from "@/types/coach")
-interface FieldBooking {
-  id: number
-  date: string
-  time: string
-  duration: number
-  field: string
-  purpose: string
-  notes?: string
-  status: "pending" | "confirmed" | "cancelled"
-}
+import { useState, useEffect } from "react"
+import  FieldBookingComponent, { FieldBooking }  from "@/components/ui/field-booking"
 
 export default function FieldBookingPage() {
-  const [bookings, setBookings] = useState<FieldBooking[]>([
-    {
-      id: 1,
-      date: "2025-01-20",
-      time: "15:00",
-      duration: 2,
-      field: "Main Field",
-      purpose: "Tactical Session",
-      notes: "Focus on defense strategies",
-      status: "confirmed",
-    },
-    {
-      id: 2,
-      date: "2025-01-22",
-      time: "10:00",
-      duration: 1.5,
-      field: "Training Ground A",
-      purpose: "Morning Training",
-      notes: "",
-      status: "pending",
-    },
-  ])
+  const [bookings, setBookings] = useState<FieldBooking[]>([])
+  const [loading, setLoading] = useState(true)
 
-  const handleCreateBooking = (booking: Omit<FieldBooking, "id">) => {
-    const newBooking: FieldBooking = {
-      id: bookings.length + 1,
-      ...booking,
+  useEffect(() => {
+    fetchBookings()
+  }, [])
+
+  const fetchBookings = async () => {
+    try {
+      const response = await fetch('/api/field-bookings')
+      if (response.ok) {
+        const data = await response.json()
+        setBookings(data)
+      } else {
+        console.error('Failed to fetch field bookings')
+      }
+    } catch (error) {
+      console.error('Error fetching field bookings:', error)
+    } finally {
+      setLoading(false)
     }
-    setBookings([...bookings, newBooking])
+  }
+
+  const handleCreateBooking = async (booking: Omit<FieldBooking, "id">) => {
+    try {
+      // Generate a unique ID for the booking
+      const bookingId = `booking_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`
+
+      const response = await fetch('/api/field-bookings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          id: bookingId,
+          ...booking,
+        }),
+      })
+
+      if (response.ok) {
+        console.log('Field booking created successfully')
+        // Refresh the bookings list
+        fetchBookings()
+      } else {
+        const error = await response.json()
+        console.error('Error creating field booking:', error)
+        alert(error.error || 'Error creating field booking')
+      }
+    } catch (error) {
+      console.error('Error creating field booking:', error)
+      alert('Error creating field booking')
+    }
+  }
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-muted-foreground">Loading field bookings...</p>
+        </div>
+      </div>
+    )
   }
 
   return (

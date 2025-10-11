@@ -14,7 +14,7 @@ import { format } from "date-fns"
 
 // Same type as in page.tsx (can centralize in "@/types/coach")
 export interface FieldBooking {
-  id: number
+  id: string
   date: string
   time: string
   duration: number

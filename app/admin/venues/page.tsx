@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -144,7 +144,7 @@ const surfaceTypes = ["Natural Grass", "Artificial Turf", "Hybrid Grass", "Indoo
 const statusOptions = ["Active", "Maintenance", "Inactive"]
 
 export default function VenueManagement() {
-  const [venues, setVenues] = useState(mockVenues)
+  const [venues, setVenues] = useState<any[]>([])
   const [searchTerm, setSearchTerm] = useState("")
   const [typeFilter, setTypeFilter] = useState("ALL")
   const [statusFilter, setStatusFilter] = useState("ALL")
@@ -167,6 +167,36 @@ export default function VenueManagement() {
       email: "",
     },
   })
+
+  useEffect(() => {
+    fetchVenues()
+  }, [])
+
+  const fetchVenues = async () => {
+    try {
+      const response = await fetch('/api/venues')
+      if (response.ok) {
+        const data = await response.json()
+        console.log('Fetched venues:', data)
+        // Transform database data to match the expected format
+        const transformedData = data.map((venue: any) => ({
+          ...venue,
+          contact: {
+            manager: venue.contact_manager,
+            phone: venue.contact_phone,
+            email: venue.contact_email,
+          },
+          fields: [], // We'll need to implement fields separately if needed
+        }))
+        console.log('Transformed venues:', transformedData)
+        setVenues(transformedData)
+      } else {
+        console.error('Failed to fetch venues:', response.status, response.statusText)
+      }
+    } catch (error) {
+      console.error('Error fetching venues:', error)
+    }
+  }
 
   const filteredVenues = venues.filter((venue) => {
     const matchesSearch =
@@ -194,32 +224,76 @@ export default function VenueManagement() {
     setEditingVenue(null)
   }
 
-  const handleCreateVenue = () => {
-    const venue = {
-      id: venues.length + 1,
-      ...newVenue,
-      capacity: Number.parseInt(newVenue.capacity),
-      fields: [],
-      bookings: 0,
-      lastMaintenance: new Date().toISOString().split("T")[0],
-      nextMaintenance: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+  const handleCreateVenue = async () => {
+    if (!newVenue.name || !newVenue.address || !newVenue.capacity || !newVenue.type || !newVenue.surface) {
+      alert('Please fill in all required fields')
+      return
     }
-    setVenues([...venues, venue])
-    setIsCreateDialogOpen(false)
-    setNewVenue({
-      name: "",
-      address: "",
-      capacity: "",
-      type: "",
-      surface: "",
-      status: "Active",
-      facilities: [],
-      contact: {
-        manager: "",
-        phone: "",
-        email: "",
-      },
+
+    console.log('Creating venue with data:', {
+      name: newVenue.name,
+      address: newVenue.address,
+      capacity: newVenue.capacity,
+      type: newVenue.type,
+      surface: newVenue.surface,
+      status: newVenue.status,
+      facilities: newVenue.facilities,
+      contact_manager: newVenue.contact.manager,
+      contact_phone: newVenue.contact.phone,
+      contact_email: newVenue.contact.email,
     })
+
+    try {
+      const response = await fetch('/api/venues', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: newVenue.name,
+          address: newVenue.address,
+          capacity: newVenue.capacity,
+          type: newVenue.type,
+          surface: newVenue.surface,
+          status: newVenue.status,
+          facilities: newVenue.facilities,
+          contact_manager: newVenue.contact.manager,
+          contact_phone: newVenue.contact.phone,
+          contact_email: newVenue.contact.email,
+        }),
+      })
+
+      console.log('API response status:', response.status)
+
+      if (response.ok) {
+        const result = await response.json()
+        console.log('Venue created successfully:', result)
+        setIsCreateDialogOpen(false)
+        setNewVenue({
+          name: "",
+          address: "",
+          capacity: "",
+          type: "",
+          surface: "",
+          status: "Active",
+          facilities: [],
+          contact: {
+            manager: "",
+            phone: "",
+            email: "",
+          },
+        })
+        // Refresh the venues list
+        fetchVenues()
+      } else {
+        const error = await response.json()
+        console.error('Error response:', error)
+        alert(error.error || 'Error creating venue')
+      }
+    } catch (error) {
+      console.error('Error creating venue:', error)
+      alert('Error creating venue')
+    }
   }
 
   const handleDeleteVenue = (venueId: number) => {

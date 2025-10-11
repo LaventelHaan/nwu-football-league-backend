@@ -3,12 +3,14 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "build": "next build",
-    "build:analyze": "cross-env ANALYZE=true next build",
+    "build": "cross-env NODE_OPTIONS=--max-old-space-size=4096 next build",
+    "build:fast": "cross-env NODE_OPTIONS=--max-old-space-size=4096 next build --no-lint",
+    "build:analyze": "cross-env ANALYZE=true NODE_OPTIONS=--max-old-space-size=4096 next build",
     "dev": "next dev",
     "lint": "next lint",
-    "start": "next start -p 3005",
+    "start": "next dev -p 4000",
     "server": "node app/backend/server-fixed.js",
+    "start:clean": ".\\start-clean.bat",
     "dev:full": "concurrently \"npm run server\" \"npm run dev\""
   },
   "dependencies": {
