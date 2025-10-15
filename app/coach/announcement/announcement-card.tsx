@@ -11,9 +11,10 @@ interface AnnouncementCardProps {
   announcement: Announcement
   onEdit: (announcement: Announcement) => void
   onDelete: (id: string) => void
+  coachTeam?: string // optional, highlight if matches
 }
 
-export function AnnouncementCard({ announcement, onEdit, onDelete }: AnnouncementCardProps) {
+export function AnnouncementCard({ announcement, onEdit, onDelete, coachTeam }: AnnouncementCardProps) {
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case "high":
@@ -27,8 +28,10 @@ export function AnnouncementCard({ announcement, onEdit, onDelete }: Announcemen
     }
   }
 
+  const highlightClass = coachTeam && announcement.team === coachTeam ? "bg-primary/10 border border-primary" : ""
+
   return (
-    <Card className="hover:shadow-md transition-shadow">
+    <Card className={`hover:shadow-md transition-shadow ${highlightClass}`}>
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="flex-1">
@@ -45,6 +48,11 @@ export function AnnouncementCard({ announcement, onEdit, onDelete }: Announcemen
                 <Users className="w-4 h-4" />
                 {announcement.recipients.includes("all") ? "All Players" : `${announcement.recipients.length} players`}
               </div>
+              {announcement.team && (
+                <div className="flex items-center gap-1">
+                  <Badge variant="secondary">{announcement.team}</Badge>
+                </div>
+              )}
             </div>
           </div>
           <div className="flex items-center gap-1">

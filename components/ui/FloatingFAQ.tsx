@@ -2,172 +2,169 @@
 
 import { useState, useRef, useEffect } from "react"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { ScrollArea } from "@/components/ui/scroll-area"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Card, CardContent } from "@/components/ui/card"
-import { Textarea } from "@/components/ui/textarea"
-import { Label } from "@/components/ui/label"
-import { HelpCircle, Eye, MessageSquare } from "lucide-react"
+import { MessageSquare, Bot, User as LucideUser, HelpCircle, Send } from "lucide-react"
+import { mockFAQs, type FAQ as MockFAQ } from "@/lib/mockData"
 
-// Import centralized mock data
-import { mockFAQs, FAQ as MockFAQ } from "@/lib/mockData"
+export interface ChatMessage {
+  id: string
+  userName: string
+  message: string
+  timestamp: string
+  isBot: boolean
+}
 
 export interface FAQ {
-  id: number;
-  question: string;
-  answer?: string;
-  status: "pending" | "answered";
-  createdDate: string;
+  id: number
+  question: string
+  answer?: string
+  status: "pending" | "answered"
+  createdDate: string
 }
 
 export default function FloatingFAQ() {
-  const [faqs, setFaqs] = useState<FAQ[]>([])
-  const [newQuestion, setNewQuestion] = useState("")
-  const [selectedFAQ, setSelectedFAQ] = useState<FAQ | null>(null)
-  const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false)
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
+  const [faqs, setFaqs] = useState<FAQ[]>(mockFAQs || [])
+  const [messages, setMessages] = useState<ChatMessage[]>([])
+  const [inputMessage, setInputMessage] = useState("")
+  const [isTyping, setIsTyping] = useState(false)
   const [isChatOpen, setIsChatOpen] = useState(false)
+  const scrollRef = useRef<HTMLDivElement>(null)
 
-  const textareaRef = useRef<HTMLTextAreaElement>(null)
-
+  // Auto-scroll to bottom
   useEffect(() => {
-    if (isCreateDialogOpen && textareaRef.current) {
-      textareaRef.current.focus()
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight
     }
-  }, [isCreateDialogOpen])
+  }, [messages, isTyping])
 
-  const handleSubmitQuestion = () => {
-    if (!newQuestion.trim()) return
+  // Send message logic
+  const handleSendMessage = async () => {
+    if (!inputMessage.trim()) return
 
-    const faq: FAQ = {
-      id: faqs.length + 1,
-      question: newQuestion,
-      answer: undefined,
-      status: "pending", // mark as pending for admin
-      createdDate: new Date().toISOString().split("T")[0],
+    const userMessage: ChatMessage = {
+      id: `msg-${Date.now()}`,
+      userName: "You",
+      message: inputMessage,
+      timestamp: new Date().toISOString(),
+      isBot: false,
     }
+    setMessages((prev) => [...prev, userMessage])
+    const currentMessage = inputMessage
+    setInputMessage("")
+    setIsTyping(true)
 
-    // Add to local state for immediate UI update
-    setFaqs([faq, ...faqs])
+    try {
+      let botReply = "Sorry, I don’t know yet. I’ll forward this to the admin team."
 
-    // Add to centralized mock data so admin can respond
-    mockFAQs.push({
-      id: faq.id,
-      question: faq.question,
-      answer: faq.answer,
-      status: faq.status,
-      createdDate: faq.createdDate,
-    } as MockFAQ)
+      // Check FAQ matches
+      const matchedFAQ = faqs.find(
+        (faq) =>
+          faq.status === "answered" &&
+          currentMessage.toLowerCase().includes(faq.question.toLowerCase())
+      )
 
-    setNewQuestion("")
-    setIsCreateDialogOpen(false)
+      if (matchedFAQ?.answer) botReply = matchedFAQ.answer
+
+      const botMessage: ChatMessage = {
+        id: `msg-${Date.now() + 1}`,
+        userName: "Bot",
+        message: botReply,
+        timestamp: new Date().toISOString(),
+        isBot: true,
+      }
+      setMessages((prev) => [...prev, botMessage])
+
+      // Add to pending FAQ if no match
+      if (!matchedFAQ) {
+        const newFAQ: FAQ = {
+          id: faqs.length + 1,
+          question: currentMessage,
+          status: "pending",
+          createdDate: new Date().toISOString().split("T")[0],
+        }
+        setFaqs([newFAQ, ...faqs])
+        mockFAQs.push(newFAQ as MockFAQ)
+      }
+    } finally {
+      setIsTyping(false)
+    }
+  }
+
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault()
+      handleSendMessage()
+    }
   }
 
   return (
     <>
-      {/* Floating Chatbot Icon */}
+      {/* Floating Button */}
       <button
         onClick={() => setIsChatOpen(true)}
         className="fixed bottom-8 right-8 z-50 bg-primary text-primary-foreground p-4 rounded-full shadow-xl hover:scale-110 transition-transform duration-300"
-        title="Support / FAQ"
+        title="FAQ & Support Assistant"
       >
         <MessageSquare className="w-6 h-6" />
       </button>
 
-      {/* Chat / FAQ Panel */}
+      {/* FAQ & Support Assistant Dialog */}
       <Dialog open={isChatOpen} onOpenChange={setIsChatOpen}>
-        <DialogContent className="max-w-md h-[80vh] overflow-y-auto">
+        <DialogContent className="max-w-md h-[80vh] flex flex-col">
           <DialogHeader>
-            <DialogTitle>FAQ & Support</DialogTitle>
+            <DialogTitle className="flex items-center gap-2">
+              <HelpCircle className="h-5 w-5" /> FAQ & Support Assistant
+            </DialogTitle>
           </DialogHeader>
 
-          <div className="space-y-4 mt-4">
-            <Button
-              size="sm"
-              className="mb-2"
-              onClick={() => setIsCreateDialogOpen(true)}
-            >
-              Ask a Question
-            </Button>
-
-            {faqs.length === 0 && (
-              <Card className="bg-card/50 backdrop-blur-sm text-center p-6">
-                <HelpCircle className="w-12 h-12 text-muted-foreground mx-auto mb-2" />
-                <p className="text-muted-foreground">No questions yet. Be the first to ask!</p>
-              </Card>
-            )}
-
-            {faqs.map((faq) => (
-              <Card
-                key={faq.id}
-                className="bg-card/50 backdrop-blur-sm hover:shadow-lg transition-all duration-300 cursor-pointer"
-                onClick={() => { setSelectedFAQ(faq); setIsDetailDialogOpen(true) }}
-              >
-                <CardContent className="pt-4 flex justify-between items-center">
-                  <div>
-                    <h3 className="text-lg font-semibold">{faq.question}</h3>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      {faq.answer ? "Answered" : "Awaiting response"}
-                    </p>
+          {/* Chat messages */}
+          <ScrollArea className="flex-1 p-3" ref={scrollRef}>
+            <div className="space-y-4">
+              {messages.map((msg) => (
+                <div key={msg.id} className={`flex gap-3 ${msg.isBot ? "" : "flex-row-reverse"}`}>
+                  <div className={`w-8 h-8 rounded-full flex items-center justify-center ${msg.isBot ? "bg-primary/10" : "bg-secondary"}`}>
+                    {msg.isBot ? <Bot className="h-4 w-4 text-primary" /> : <LucideUser className="h-4 w-4" />}
                   </div>
-                  <Eye className="w-5 h-5 text-muted-foreground" />
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* Submit Question Dialog */}
-      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Ask a Question</DialogTitle>
-          </DialogHeader>
-          <div className="space-y-4 mt-4">
-            <Label htmlFor="question">Your Question</Label>
-            <Textarea
-              id="question"
-              rows={4}
-              ref={textareaRef}
-              placeholder="Type your question here..."
-              value={newQuestion}
-              onChange={(e) => setNewQuestion(e.target.value)}
-            />
-
-            <div className="flex justify-end space-x-2">
-              <Button variant="outline" onClick={() => setIsCreateDialogOpen(false)}>Cancel</Button>
-              <Button onClick={handleSubmitQuestion} disabled={!newQuestion.trim()}>Submit</Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
-
-      {/* FAQ Detail Dialog */}
-      <Dialog open={isDetailDialogOpen} onOpenChange={setIsDetailDialogOpen}>
-        <DialogContent className="max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Question Details</DialogTitle>
-          </DialogHeader>
-          {selectedFAQ && (
-            <div className="space-y-4 mt-4">
-              <div>
-                <h2 className="text-xl font-bold">{selectedFAQ.question}</h2>
-                <p className="text-sm text-muted-foreground mt-1">
-                  Submitted on {selectedFAQ.createdDate}
-                </p>
-              </div>
-              <div>
-                <Label className="text-sm font-medium">Answer</Label>
-                <div className="mt-2 p-4 bg-muted/20 rounded-lg min-h-[60px]">
-                  {selectedFAQ.answer ? (
-                    <p className="text-sm">{selectedFAQ.answer}</p>
-                  ) : (
-                    <p className="text-sm text-muted-foreground">Awaiting admin response...</p>
-                  )}
+                  <div className={`flex-1 ${msg.isBot ? "" : "flex flex-col items-end"}`}>
+                    <div className="rounded-lg p-3 max-w-[80%] bg-muted">
+                      <p className="text-sm leading-relaxed">{msg.message}</p>
+                    </div>
+                  </div>
                 </div>
-              </div>
+              ))}
+
+              {isTyping && (
+                <div className="flex gap-3">
+                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Bot className="h-4 w-4 text-primary" />
+                  </div>
+                  <div className="bg-muted rounded-lg p-3">
+                    <div className="flex gap-1">
+                      <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce" />
+                      <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce [animation-delay:0.2s]" />
+                      <div className="w-2 h-2 bg-muted-foreground rounded-full animate-bounce [animation-delay:0.4s]" />
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
-          )}
+          </ScrollArea>
+
+          {/* Input */}
+          <div className="border-t p-3 flex gap-2">
+            <Input
+              placeholder="Ask a question..."
+              value={inputMessage}
+              onChange={(e) => setInputMessage(e.target.value)}
+              onKeyPress={handleKeyPress}
+              className="flex-1"
+            />
+            <Button onClick={handleSendMessage} size="icon">
+              <Send className="h-4 w-4" />
+            </Button>
+          </div>
         </DialogContent>
       </Dialog>
     </>

@@ -1,7 +1,7 @@
 "use client"
 
-import { useState } from "react"
-import { useAuth } from "@/hooks/use-auth"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback } from "@/components/ui/avatar"
 import {
@@ -19,8 +19,10 @@ import {
   MapPin,
   UserPlus,
   Heart,
+  User,
 } from "lucide-react"
 import { cn } from "@/lib/utils"
+import type { User as UserType } from "@/lib/mockData"
 
 interface SidebarProps {
   activeTab: string
@@ -28,8 +30,17 @@ interface SidebarProps {
 }
 
 export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
-  const { coach, logout } = useAuth()
+  
+  const router = useRouter()
   const [isCollapsed, setIsCollapsed] = useState(false)
+  const [currentUser, setCurrentUser] = useState<UserType | null>(null)
+
+  useEffect(() => {
+    const storedUser = localStorage.getItem("currentUser")
+    if (storedUser) {
+      setCurrentUser(JSON.parse(storedUser))
+    }
+  }, [])
 
   const menuItems = [
     { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -44,11 +55,17 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
     { id: "medical", label: "Medical Records", icon: Heart },
   ]
 
+ const handleLogout = () => {
+  localStorage.removeItem("currentUser")
+  // Optionally call an API logout if needed
+  router.replace("/login") // Redirect to login page
+}
+
   return (
     <div
       className={cn(
         "bg-sidebar border-r border-sidebar-border flex flex-col transition-all duration-300",
-        isCollapsed ? "w-16" : "w-64",
+        isCollapsed ? "w-16" : "w-64"
       )}
     >
       {/* Header */}
@@ -60,7 +77,13 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
                 <Shield className="w-4 h-4 text-sidebar-primary-foreground" />
               </div>
               <div>
-                <h2 className="font-bold text-sidebar-foreground">NWU Coach</h2>
+                <h2 className="font-bold text-sidebar-foreground">
+                  {currentUser
+                    ? currentUser.role === "coach" && currentUser.team
+                      ? currentUser.team
+                      : currentUser.name
+                    : "Welcome"}
+                </h2>
                 <p className="text-xs text-sidebar-foreground/70">Portal</p>
               </div>
             </div>
@@ -92,7 +115,7 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
                   isActive
                     ? "bg-sidebar-primary text-sidebar-primary-foreground hover:bg-sidebar-primary/90"
                     : "hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                  isCollapsed && "justify-center px-2",
+                  isCollapsed && "justify-center px-2"
                 )}
                 onClick={() => onTabChange(item.id)}
               >
@@ -106,32 +129,48 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
 
       {/* User Profile */}
       <div className="p-4 border-t border-sidebar-border">
-        {!isCollapsed && coach && (
+        {!isCollapsed && currentUser && (
           <div className="mb-4">
             <div className="flex items-center gap-3">
               <Avatar className="w-10 h-10">
                 <AvatarFallback className="bg-sidebar-primary text-sidebar-primary-foreground">
-                  {coach.name
+                  {currentUser.name
                     .split(" ")
                     .map((n) => n[0])
                     .join("")}
                 </AvatarFallback>
               </Avatar>
               <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-sidebar-foreground truncate">{coach.name}</p>
-                <p className="text-xs text-sidebar-foreground/70 truncate">{coach.team}</p>
+                <p className="text-sm font-medium text-sidebar-foreground truncate">{currentUser.name}</p>
+                {currentUser.role === "coach" && (
+                  <p className="text-xs text-sidebar-foreground/70 truncate">{currentUser.team}</p>
+                )}
               </div>
             </div>
           </div>
         )}
 
         <div className="space-y-2">
+          {/* Profile button */}
           <Button
             variant="ghost"
             className={cn(
               "w-full justify-start gap-3 text-sidebar-foreground hover:bg-sidebar-accent",
-              isCollapsed && "justify-center px-2",
+              isCollapsed && "justify-center px-2"
             )}
+            onClick={() => router.push("/profile")}
+          >
+            <User className="w-4 h-4" />
+            {!isCollapsed && <span>Profile</span>}
+          </Button>
+
+          <Button
+            variant="ghost"
+            className={cn(
+              "w-full justify-start gap-3 text-sidebar-foreground hover:bg-sidebar-accent",
+              isCollapsed && "justify-center px-2"
+            )}
+            onClick={() => router.push("/settings")}
           >
             <Settings className="w-4 h-4" />
             {!isCollapsed && <span>Settings</span>}
@@ -139,10 +178,10 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
 
           <Button
             variant="ghost"
-            onClick={logout}
+            onClick={handleLogout}
             className={cn(
               "w-full justify-start gap-3 text-sidebar-foreground hover:bg-sidebar-accent hover:text-destructive",
-              isCollapsed && "justify-center px-2",
+              isCollapsed && "justify-center px-2"
             )}
           >
             <LogOut className="w-4 h-4" />

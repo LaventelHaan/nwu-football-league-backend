@@ -10,16 +10,9 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { ArrowLeft, Eye, EyeOff, Mail, Lock } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
-// Wherever you are using Coach (like login page or dashboard)
-type UserRole = "admin" | "coach" | "player" | "scouter"
 
-type User = {
-  id: string
-  name: string
-  email: string
-  role: UserRole
-  avatar?: string
-}
+import type { User } from "@/lib/mockData"
+import { users,mockPlayers } from "@/lib/mockData" // import the users array
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
@@ -34,40 +27,51 @@ export default function LoginPage() {
     e.preventDefault()
     setIsLoading(true)
     setError("")
+ // Add password and role to all mockPlayers
+  const playersWithLogin = mockPlayers.map((p) => ({
+    ...p,
+    password: "player123",
+    role: "player" as const
+  }))
+   // Combine users and players
+  const allAccounts = [...users, ...playersWithLogin]
+    // Find matching user
+    const user = allAccounts.find(
+    (a) => a.email === email && a.password === password
+  )
 
-    setTimeout(() => {
-      let user: User | null = null
+    if (user) {
+      // Store user in localStorage
+      localStorage.setItem("currentUser", JSON.stringify(user))
 
-      // Admin credentials
-      if (email === "admin@nwu.ac.za" && password === "admin123") {
-        user = { id: "1", name: "Admin User", email, role: "admin" }
-        router.push("/admin/dashboard")
-      }
-      // Coach credentials
-      else if (email === "coach@nwu.ac.za" && password === "coach123") {
-        user = { id: "2", name: "Coach Smith", email, role: "coach" }
-        router.push("/coach")
-      }
-      // Player credentials
-      else if (email === "player@nwu.ac.za" && password === "player123") {
-        user = { id: "3", name: "Thabo Mthembu", email, role: "player" }
-        router.push("/players/dashboard")
-      }
-      // Scouter credentials
-      else if (email === "scout@nwu.ac.za" && password === "scout123") {
-        user = { id: "4", name: "Scout Johnson", email, role: "scouter" }
-        router.push("/scouting/dashboard")
-      }
+      // Redirect based on role
+      switch (user.role) {
+        case "admin":
+          router.push("/admin/dashboard")
+          break
+        case "coach":
+          router.push("/coach")
+          break
+        case "player":
+          
 
-      if (user) {
-        localStorage.setItem("currentUser", JSON.stringify(user))
-      } else {
-        setError("Invalid email or password")
+          router.push("/player/dashboard")
+          console.log("Logged-in user:", user);
+console.log("Found playerData:", mockPlayers.find(p => p.email === user?.email));
+          break
+        case "scouter":
+          router.push("/scout/dashboard")
+          break
+        default:
+          setError("Unknown role")
       }
+    } else {
+      setError("Invalid email or password")
+    }
 
-      setIsLoading(false)
-    }, 1000)
+    setIsLoading(false)
   }
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted to-background flex items-center justify-center p-4">
       {/* Background decoration */}

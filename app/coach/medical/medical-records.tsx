@@ -93,8 +93,9 @@ export function MedicalRecords({ records, players, onCreateRecord, onUpdateRecor
   }
 
   const getPlayerName = (playerId: string) => {
-    return players.find((p) => p.id === playerId)?.name || "Unknown Player"
-  }
+  return players.find((p) => p.id.toString() === playerId)?.name || "Unknown Player"
+}
+
 
   return (
     <div className="space-y-6">
@@ -126,12 +127,13 @@ export function MedicalRecords({ records, players, onCreateRecord, onUpdateRecor
                       <SelectValue placeholder="Select player" />
                     </SelectTrigger>
                     <SelectContent>
-                      {players.map((player) => (
-                        <SelectItem key={player.id} value={player.id}>
-                          {player.name} - {player.position}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
+  {players.map((player) => (
+    <SelectItem key={player.id} value={player.id.toString()}>
+      {player.name} - {player.position}
+    </SelectItem>
+  ))}
+</SelectContent>
+
                   </Select>
                 </div>
                 <div>

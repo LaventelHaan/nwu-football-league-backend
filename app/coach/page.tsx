@@ -1,21 +1,21 @@
 "use client"
 
-import { useState } from "react"
-import { useAuth } from "@/hooks/use-auth"
+import { useState, useMemo, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Sidebar } from "@/app/coach/layout/layout"
-import DashboardStats  from "@/app/coach/dashboard/dashboard-stats"
+import DashboardStats from "@/app/coach/dashboard/dashboard-stats"
 import QuickActions from "@/app/coach/dashboard/quick-actions"
-import  RecentActivity  from "@/app/coach/dashboard/recent-activity"
+import RecentActivity from "@/app/coach/dashboard/recent-activity"
 import { RecentMatches } from "@/app/coach/matches/recent-matches"
 import { PlayersList } from "@/app/coach/players/players-list"
 import { AnnouncementsList } from "@/app/coach/announcement/announcements-list"
 import { UpcomingMatches } from "@/app/coach/matches/upcoming-matches"
 import { TeamStatsComponent } from "@/app/coach/team/team-stats"
 import { LeagueStandings } from "@/app/coach/league/league-standings"
-import  FieldBookingComponent  from "@/app/coach/field-booking/page"
+import FieldBookingComponent from "@/app/coach/field-booking/page"
 import { PlayerRequests } from "@/app/coach/requests/player-requests"
-import  MatchesOverview from "@/app/coach/matches/matches-overview"
+import MatchesOverview from "@/app/coach/matches/matches-overview"
 import { MedicalRecords } from "@/app/coach/medical/medical-records"
 import {
   mockPlayers,
@@ -25,22 +25,47 @@ import {
   mockFieldBookings,
   mockPlayerRequests,
   mockMedicalRecords,
+  mockFixtures,
 } from "@/lib/mockData"
-
-import { mockRecentMatches, mockUpcomingMatches } from "@/lib/mockData"
 import type { Player, Announcement, FieldBooking, PlayerRequest, MedicalRecord } from "@/lib/mockData"
 
 export default function CoachDashboard() {
-  const { coach, isAuthenticated, login, isLoading } = useAuth()
+  const router = useRouter()
+
+  const [coach, setCoach] = useState<{ name: string; team?: string; role: string } | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
   const [activeTab, setActiveTab] = useState("dashboard")
   const [players, setPlayers] = useState(mockPlayers)
-const [announcements, setAnnouncements] = useState(mockAnnouncements)
-const [fieldBookings, setFieldBookings] = useState(mockFieldBookings)
-const [playerRequests, setPlayerRequests] = useState(mockPlayerRequests)
-const [medicalRecords, setMedicalRecords] = useState(mockMedicalRecords)
-const [recentMatches, setRecentMatches] = useState(mockRecentMatches)
+  const [announcements, setAnnouncements] = useState(mockAnnouncements)
+  const [fieldBookings, setFieldBookings] = useState(mockFieldBookings)
+  const [playerRequests, setPlayerRequests] = useState(mockPlayerRequests)
+  const [medicalRecords, setMedicalRecords] = useState(mockMedicalRecords)
 
+  // Load coach from localStorage
+  useEffect(() => {
+    const storedUser = localStorage.getItem("currentUser")
+    if (storedUser) {
+      setCoach(JSON.parse(storedUser))
+    } else {
+      router.replace("/login") // redirect if not logged in
+    }
+    setIsLoading(false)
+  }, [router])
 
+  // Fixtures
+  const mockRecentMatches = mockFixtures.slice(0, 5)
+  const mockUpcomingMatches = mockFixtures.slice(5, 10)
+
+  // Filter records for coach's team
+  const teamMedicalRecords = useMemo(() => {
+    if (!coach?.team) return []
+    return medicalRecords.filter((record) => record.team === coach.team)
+  }, [coach, medicalRecords])
+
+  const teamPlayers = useMemo(() => {
+    if (!coach?.team) return []
+    return players.filter((p) => p.team === coach.team)
+  }, [coach, players])
 
   if (isLoading) {
     return (
@@ -53,22 +78,16 @@ const [recentMatches, setRecentMatches] = useState(mockRecentMatches)
     )
   }
 
-
-  
-  // Player management functions
+  // Player management
   const handleUpdatePlayer = (updatedPlayer: Player) => {
     setPlayers(players.map((p) => (p.id === updatedPlayer.id ? updatedPlayer : p)))
   }
 
-   // Announcement management functions
+  // Announcements
   const handleCreateAnnouncement = (announcementData: Omit<Announcement, "id">) => {
-    const newAnnouncement: Announcement = {
-      ...announcementData,
-      id: Date.now().toString(),
-    }
+    const newAnnouncement: Announcement = { ...announcementData, id: Date.now().toString() }
     setAnnouncements([newAnnouncement, ...announcements])
   }
-
 
   const handleUpdateAnnouncement = (updatedAnnouncement: Announcement) => {
     setAnnouncements(announcements.map((a) => (a.id === updatedAnnouncement.id ? updatedAnnouncement : a)))
@@ -78,7 +97,7 @@ const [recentMatches, setRecentMatches] = useState(mockRecentMatches)
     setAnnouncements(announcements.filter((a) => a.id !== id))
   }
 
-  // Quick actions handler
+  // Quick actions
   const handleQuickAction = (action: string) => {
     switch (action) {
       case "new-announcement":
@@ -91,7 +110,6 @@ const [recentMatches, setRecentMatches] = useState(mockRecentMatches)
         setActiveTab("matches")
         break
       case "team-report":
-        // In a real app, this would generate a report
         alert("Team report feature coming soon!")
         break
       case "new-booking":
@@ -106,33 +124,30 @@ const [recentMatches, setRecentMatches] = useState(mockRecentMatches)
     }
   }
 
-  // Handlers for new features
+  // Bookings
   const handleCreateBooking = (bookingData: Omit<FieldBooking, "id">) => {
-    const newBooking: FieldBooking = {
-      ...bookingData,
-      id: Date.now().toString(),
-    }
+    const newBooking: FieldBooking = { ...bookingData, id: Date.now().toString() }
     setFieldBookings([...fieldBookings, newBooking])
   }
 
+  // Requests
   const handleUpdateRequest = (id: string, status: PlayerRequest["status"], notes?: string) => {
     setPlayerRequests(
       playerRequests.map((req) => (req.id === id ? { ...req, status, notes: notes || req.notes } : req)),
     )
   }
 
+  // Medical Records
   const handleCreateMedicalRecord = (recordData: Omit<MedicalRecord, "id">) => {
-    const newRecord: MedicalRecord = {
-      ...recordData,
-      id: Date.now().toString(),
-    }
+    const newRecord: MedicalRecord = { ...recordData, id: Date.now().toString() }
     setMedicalRecords([...medicalRecords, newRecord])
   }
 
   const handleUpdateMedicalRecord = (updatedRecord: MedicalRecord) => {
-    setMedicalRecords(medicalRecords.map((record) => (record.id === updatedRecord.id ? updatedRecord : record)))
+    setMedicalRecords(medicalRecords.map((r) => (r.id === updatedRecord.id ? updatedRecord : r)))
   }
-  // Render main content based on active tab
+
+  // Render tabs
   const renderContent = () => {
     switch (activeTab) {
       case "dashboard":
@@ -165,24 +180,21 @@ const [recentMatches, setRecentMatches] = useState(mockRecentMatches)
       case "players":
         return (
           <div className="space-y-6">
-            <div>
-              <h1 className="text-3xl font-bold text-foreground">Team Players</h1>
-              <p className="text-muted-foreground">Manage your team roster and player information.</p>
-            </div>
-            <PlayersList players={players} onUpdatePlayer={handleUpdatePlayer} />
+            <h1 className="text-3xl font-bold text-foreground">Team Players</h1>
+            <p className="text-muted-foreground">Manage your team roster and player information.</p>
+            <PlayersList players={teamPlayers} onUpdatePlayer={handleUpdatePlayer} />
           </div>
         )
 
       case "announcements":
         return (
           <div className="space-y-6">
-            <div>
-              <h1 className="text-3xl font-bold text-foreground">Announcements</h1>
-              <p className="text-muted-foreground">Communicate with your team members.</p>
-            </div>
+            <h1 className="text-3xl font-bold text-foreground">Announcements</h1>
+            <p className="text-muted-foreground">Communicate with your team members.</p>
             <AnnouncementsList
               announcements={announcements}
-              players={players}
+              players={teamPlayers}
+              coachTeam={coach?.team || ""}
               onCreateAnnouncement={handleCreateAnnouncement}
               onUpdateAnnouncement={handleUpdateAnnouncement}
               onDeleteAnnouncement={handleDeleteAnnouncement}
@@ -193,32 +205,26 @@ const [recentMatches, setRecentMatches] = useState(mockRecentMatches)
       case "matches":
         return (
           <div className="space-y-6">
-            <div>
-              <h1 className="text-3xl font-bold text-foreground">Upcoming Matches</h1>
-              <p className="text-muted-foreground">View and manage your team's match schedule.</p>
-            </div>
-            <UpcomingMatches matches={mockUpcomingMatches} />
+            <h1 className="text-3xl font-bold text-foreground">Upcoming Matches</h1>
+            <p className="text-muted-foreground">View and manage your team's match schedule.</p>
+            <UpcomingMatches fixtures={mockUpcomingMatches.filter(f => f.homeTeam === coach?.team || f.awayTeam === coach?.team)} />
           </div>
         )
 
       case "results":
         return (
           <div className="space-y-6">
-            <div>
-              <h1 className="text-3xl font-bold text-foreground">Match Results</h1>
-              <p className="text-muted-foreground">Review your team's recent performance.</p>
-            </div>
-            <RecentMatches matches={mockRecentMatches} />
+            <h1 className="text-3xl font-bold text-foreground">Match Results</h1>
+            <p className="text-muted-foreground">Review your team's recent performance.</p>
+            <RecentMatches matches={mockRecentMatches.filter(f => f.homeTeam === coach?.team || f.awayTeam === coach?.team)} />
           </div>
         )
 
       case "team-stats":
         return (
           <div className="space-y-6">
-            <div>
-              <h1 className="text-3xl font-bold text-foreground">Team Statistics</h1>
-              <p className="text-muted-foreground">Comprehensive overview of your team's performance</p>
-            </div>
+            <h1 className="text-3xl font-bold text-foreground">Team Statistics</h1>
+            <p className="text-muted-foreground">Comprehensive overview of your team's performance</p>
             <TeamStatsComponent stats={mockTeamStats} />
           </div>
         )
@@ -226,34 +232,26 @@ const [recentMatches, setRecentMatches] = useState(mockRecentMatches)
       case "league":
         return (
           <div className="space-y-6">
-            <div>
-              <h1 className="text-3xl font-bold text-foreground">League Standings</h1>
-              <p className="text-muted-foreground">Current position in the university league</p>
-            </div>
+            <h1 className="text-3xl font-bold text-foreground">League Standings</h1>
+            <p className="text-muted-foreground">Current position in the university league</p>
             <LeagueStandings standings={mockLeagueStandings} />
           </div>
         )
 
       case "bookings":
-        return (
-          <div className="space-y-6">
-            <FieldBookingComponent bookings={fieldBookings} onCreateBooking={handleCreateBooking} />
-          </div>
-        )
+        return <FieldBookingComponent bookings={fieldBookings} onCreateBooking={handleCreateBooking} />
 
       case "requests":
-        return (
-          <div className="space-y-6">
-            <PlayerRequests requests={playerRequests} onUpdateRequest={handleUpdateRequest} />
-          </div>
-        )
+        return <PlayerRequests requests={playerRequests} onUpdateRequest={handleUpdateRequest} />
 
       case "medical":
         return (
           <div className="space-y-6">
+            <h1 className="text-3xl font-bold text-foreground">Medical Records</h1>
+            <p className="text-muted-foreground">Track player health and medical information.</p>
             <MedicalRecords
-              records={medicalRecords}
-              players={players}
+              records={teamMedicalRecords}
+              players={teamPlayers}
               onCreateRecord={handleCreateMedicalRecord}
               onUpdateRecord={handleUpdateMedicalRecord}
             />
