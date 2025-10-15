@@ -19,13 +19,19 @@ interface AnnouncementFormProps {
   onSave: (announcement: Omit<Announcement, "id"> | Announcement) => void
 }
 
-export function AnnouncementForm({ announcement, players, open, onOpenChange, onSave }: AnnouncementFormProps) {
+export function AnnouncementForm({
+  announcement,
+  players,
+  open,
+  onOpenChange,
+  onSave,
+}: AnnouncementFormProps) {
   const [formData, setFormData] = useState<Omit<Announcement, "id">>({
     title: announcement?.title || "",
     message: announcement?.message || "",
     date: announcement?.date || new Date().toISOString().split("T")[0],
     priority: announcement?.priority || "medium",
-    recipients: announcement?.recipients || ["all"],
+    recipients: announcement?.recipients?.map(String) || ["all"], // Ensure strings
   })
 
   const handleSave = () => {
@@ -34,8 +40,8 @@ export function AnnouncementForm({ announcement, players, open, onOpenChange, on
     } else {
       onSave(formData)
     }
+
     onOpenChange(false)
-    // Reset form
     setFormData({
       title: "",
       message: "",
@@ -92,7 +98,10 @@ export function AnnouncementForm({ announcement, players, open, onOpenChange, on
               <Label htmlFor="priority">Priority</Label>
               <Select
                 value={formData.priority}
-                onValueChange={(value: any) => setFormData({ ...formData, priority: value })}
+                onValueChange={(value: "low" | "medium" | "high") =>
+  setFormData({ ...formData, priority: value })
+}
+
               >
                 <SelectTrigger>
                   <SelectValue />
@@ -146,11 +155,11 @@ export function AnnouncementForm({ announcement, players, open, onOpenChange, on
                     {players.map((player) => (
                       <div key={player.id} className="flex items-center space-x-2">
                         <Checkbox
-                          id={player.id}
-                          checked={formData.recipients.includes(player.id)}
-                          onCheckedChange={(checked) => handleRecipientChange(player.id, checked as boolean)}
+                          id={String(player.id)}
+                          checked={formData.recipients.includes(String(player.id))}
+                          onCheckedChange={(checked) => handleRecipientChange(String(player.id), checked as boolean)}
                         />
-                        <Label htmlFor={player.id} className="text-sm">
+                        <Label htmlFor={String(player.id)} className="text-sm">
                           {player.name} - {player.position}
                         </Label>
                       </div>

@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useEffect, useState, useMemo } from "react"
 import type { Announcement, Player } from "@/lib/mockData"
 import { AnnouncementCard } from "./announcement-card"
 import { AnnouncementForm } from "./announcement-form"
@@ -12,7 +12,7 @@ import { Plus, Search, Megaphone } from "lucide-react"
 interface AnnouncementsListProps {
   announcements: Announcement[]
   players: Player[]
-  onCreateAnnouncement: (announcement: Omit<Announcement, "id">) => void
+  onCreateAnnouncement: (data: Omit<Announcement, "id">) => void
   onUpdateAnnouncement: (announcement: Announcement) => void
   onDeleteAnnouncement: (id: string) => void
 }
@@ -28,14 +28,43 @@ export function AnnouncementsList({
   const [priorityFilter, setPriorityFilter] = useState("all")
   const [selectedAnnouncement, setSelectedAnnouncement] = useState<Announcement | null>(null)
   const [formOpen, setFormOpen] = useState(false)
+  const [coachTeam, setCoachTeam] = useState<string | null>(null)
 
-  const filteredAnnouncements = announcements.filter((announcement) => {
-    const matchesSearch =
-      announcement.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      announcement.message.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesPriority = priorityFilter === "all" || announcement.priority === priorityFilter
-    return matchesSearch && matchesPriority
-  })
+  // Get current logged-in coach's team
+  useEffect(() => {
+    const storedUser = localStorage.getItem("currentUser")
+    if (storedUser) {
+      const user = JSON.parse(storedUser)
+      if (user.role === "coach" && typeof user.team === "string") {
+        setCoachTeam(user.team)
+      }
+    }
+  }, [])
+
+  // Filter announcements for the coach's team
+  const teamAnnouncements = useMemo(() => {
+    if (!coachTeam) return []
+    return announcements.filter(
+      (a) => a.team.toLowerCase() === coachTeam.toLowerCase()
+    )
+  }, [announcements, coachTeam])
+
+  // Apply search and priority filters
+  const filteredAnnouncements = useMemo(() => {
+    return teamAnnouncements.filter((announcement) => {
+      const title = announcement.title ?? ""
+      const message = announcement.message ?? ""
+
+      const matchesSearch =
+        title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        message.toLowerCase().includes(searchTerm.toLowerCase())
+
+      const matchesPriority =
+        priorityFilter === "all" || announcement.priority === priorityFilter
+
+      return matchesSearch && matchesPriority
+    })
+  }, [teamAnnouncements, searchTerm, priorityFilter])
 
   const handleCreateNew = () => {
     setSelectedAnnouncement(null)
@@ -50,8 +79,8 @@ export function AnnouncementsList({
   const handleSave = (announcementData: Omit<Announcement, "id"> | Announcement) => {
     if ("id" in announcementData) {
       onUpdateAnnouncement(announcementData)
-    } else {
-      onCreateAnnouncement(announcementData)
+    } else if (coachTeam) {
+      onCreateAnnouncement({ ...announcementData, team: coachTeam })
     }
   }
 
@@ -106,18 +135,12 @@ export function AnnouncementsList({
               ? "Try adjusting your search or filter criteria"
               : "Create your first announcement to communicate with your team"}
           </p>
-          {!searchTerm && priorityFilter === "all" && (
-            <Button onClick={handleCreateNew} className="bg-primary hover:bg-primary/90">
-              <Plus className="w-4 h-4 mr-2" />
-              Create Announcement
-            </Button>
-          )}
         </div>
       )}
 
       <AnnouncementForm
         announcement={selectedAnnouncement}
-        players={players}
+        players={players.filter(player => player.team.toLowerCase() === coachTeam?.toLowerCase())}
         open={formOpen}
         onOpenChange={setFormOpen}
         onSave={handleSave}

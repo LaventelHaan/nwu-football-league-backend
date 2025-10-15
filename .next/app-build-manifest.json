@@ -21,30 +21,25 @@
       "static/chunks/main-app.js",
       "static/chunks/app/login/page.js"
     ],
-    "/admin/dashboard/page": [
+    "/scout/dashboard/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/admin/dashboard/page.js"
+      "static/chunks/app/scout/dashboard/page.js"
     ],
-    "/admin/venues/loading": [
+    "/player/dashboard/loading": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/admin/venues/loading.js"
+      "static/chunks/app/player/dashboard/loading.js"
     ],
-    "/admin/venues/page": [
+    "/player/dashboard/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/admin/venues/page.js"
+      "static/chunks/app/player/dashboard/page.js"
     ],
-    "/admin/players/loading": [
+    "/coach/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/admin/players/loading.js"
-    ],
-    "/admin/players/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/admin/players/page.js"
+      "static/chunks/app/coach/page.js"
     ]
   }
 }

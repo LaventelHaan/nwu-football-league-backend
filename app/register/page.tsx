@@ -161,7 +161,7 @@ export default function RegisterPage() {
                     <SelectValue placeholder="Select your role" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="student">Players</SelectItem>
+                    <SelectItem value="student">Player</SelectItem>
                     <SelectItem value="coach">Coach</SelectItem>
                     <SelectItem value="coach">Scout</SelectItem>
                   </SelectContent>

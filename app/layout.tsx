@@ -3,8 +3,8 @@ import { GeistSans } from "geist/font/sans";
 import { GeistMono } from "geist/font/mono";
 import "./globals.css";
 
-import { AuthProvider } from "@/hooks/use-auth";
-import FAQWrapper from "@/components/ui/FloatingFAQ"; // Use the wrapper here
+import { AuthProvider } from "@/lib/auth-context"; // Make sure this is the actual provider
+import FAQWrapper from "@/components/ui/FloatingFAQ";
 
 export async function generateMetadata({
   params,
@@ -22,15 +22,18 @@ export async function generateMetadata({
 
 export default function RootLayout({
   children,
+  params,
 }: Readonly<{
   children: React.ReactNode;
+  params?: { slug?: string };
 }>) {
   return (
     <html lang="en">
       <body className={`font-sans ${GeistSans.variable} ${GeistMono.variable}`}>
         <AuthProvider>
           {children}
-          <FAQWrapper /> {/* Now only renders on home page */}
+          {/* Render FAQ only on the home page */}
+          {(!params?.slug || params.slug === "home") && <FAQWrapper />}
         </AuthProvider>
       </body>
     </html>

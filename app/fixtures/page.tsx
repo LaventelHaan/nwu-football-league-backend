@@ -1,13 +1,15 @@
 "use client"
 
-
-import { useEffect, useState } from "react"
+import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Calendar, Clock, MapPin, ArrowLeft, Filter } from "lucide-react"
 import Link from "next/link"
+// Import centralized mock data
+import { mockFixtures } from "@/lib/mockData"
+import { mockResults } from "@/lib/mockData"
 
 
 const getStatusBadge = (status: string) => {
@@ -27,81 +29,8 @@ const getStatusBadge = (status: string) => {
   }
 }
 
-
-const API_BASE = process.env.NEXT_PUBLIC_FIXTURES_API ?? "http://localhost:4000";
-
-type Fixture = {
-  id: number;
-  homeTeam: string;
-  awayTeam: string;
-  date: string;
-  time: string;
-  venue: string;
-  status: string;
-  round: string;
-};
-
-type Result = Fixture & {
-  homeScore: number;
-  awayScore: number;
-  attendance?: number;
-  highlights?: string[];
-};
-
 export default function FixturesPage() {
-  const [selectedTab, setSelectedTab] = useState("upcoming");
-  const [fixtures, setFixtures] = useState<Fixture[]>([]);
-  const [results, setResults] = useState<Result[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let isMounted = true;
-    async function load() {
-      try {
-        const [fxRes, rsRes] = await Promise.all([
-          fetch(`${API_BASE}/api/fixtures`).then(r => r.json()),
-          fetch(`${API_BASE}/api/results`).then(r => r.json()),
-        ]);
-        if (!isMounted) return;
-        setFixtures(
-          (fxRes.fixtures ?? []).map((f: any) => ({
-            id: f.fixture_id,
-            homeTeam: f.home_team,
-            awayTeam: f.away_team,
-            date: f.scheduled_at?.split('T')[0] ?? '',
-            time: f.scheduled_at?.split('T')[1]?.slice(0,5) ?? '',
-            venue: f.venue ?? '',
-            status: f.status_key ?? 'upcoming',
-            round: f.round ?? '',
-          }))
-        );
-        setResults(
-          (rsRes.results ?? []).map((r: any) => ({
-            id: r.fixture_id,
-            homeTeam: r.home_team,
-            awayTeam: r.away_team,
-            date: r.scheduled_at?.split('T')[0] ?? '',
-            time: r.scheduled_at?.split('T')[1]?.slice(0,5) ?? '',
-            venue: r.venue ?? '',
-            status: r.status_key ?? 'final',
-            round: r.round ?? '',
-            homeScore: r.home_score,
-            awayScore: r.away_score,
-            attendance: r.attendance,
-            highlights: r.highlights,
-          }))
-        );
-      } catch (e: any) {
-        if (!isMounted) return;
-        setError(e?.message ?? 'Failed to load fixtures');
-      } finally {
-        if (isMounted) setLoading(false);
-      }
-    }
-    load();
-    return () => { isMounted = false; };
-  }, []);
+  const [selectedTab, setSelectedTab] = useState("upcoming")
 
   return (
     <div className="min-h-screen bg-background">
@@ -147,10 +76,8 @@ export default function FixturesPage() {
 
           {/* Upcoming Fixtures */}
           <TabsContent value="upcoming" className="space-y-6">
-            {loading && <div className="text-sm text-muted-foreground">Loading fixtures...</div>}
-            {error && <div className="text-sm text-red-600">{error}</div>}
             <div className="grid gap-4">
-              {fixtures.map((fixture) => (
+              {mockFixtures.map((fixture) => (
                 <Card key={fixture.id} className="hover:shadow-md transition-shadow">
                   <CardContent className="p-6">
                     <div className="flex justify-between items-start mb-4">
@@ -203,10 +130,8 @@ export default function FixturesPage() {
 
           {/* Recent Results */}
           <TabsContent value="results" className="space-y-6">
-            {loading && <div className="text-sm text-muted-foreground">Loading results...</div>}
-            {error && <div className="text-sm text-red-600">{error}</div>}
             <div className="grid gap-4">
-              {results.map((result) => (
+              {mockResults.map((result) => (
                 <Card key={result.id} className="hover:shadow-md transition-shadow">
                   <CardContent className="p-6">
                     <div className="flex justify-between items-start mb-4">

@@ -13,6 +13,14 @@ export interface MockCoachData {
   teamStats: any[]
 }
 
+export interface User {
+  id: string
+  name: string
+  email: string
+  password: string
+  role: "admin" | "coach" | "player" | "scouter"
+  team?: string // only for coaches
+}
 export interface Team {
   id: number
   name: string
@@ -59,6 +67,8 @@ export interface BasePlayer {
     name: string
     phone: string
   }
+  role: string
+  password?: string
 }
 
 
@@ -78,7 +88,7 @@ export interface Goalkeeper extends BasePlayer {
 export type Player = OutfieldPlayer | Goalkeeper
 
 export interface Fixture {
-  id: number;
+  id: string;
   homeTeam: string;
   awayTeam: string;
   date: string;
@@ -173,7 +183,8 @@ export const mockPlayers: Player[] = [
     medicalNotes: "Minor ankle sprain, recovering well.",
     email: "john.doe@nwu.edu",
     phone: "+27 82 123 4567",
-    emergencyContact: { name: "Jane Doe", phone: "+27 82 765 4321" }
+    emergencyContact: { name: "Jane Doe", phone: "+27 82 765 4321" },
+    role: "player"
   },
   {
     id: 2,
@@ -198,7 +209,8 @@ export const mockPlayers: Player[] = [
     medicalNotes: "No current injuries.",
     email: "mike.smith@wits.ac.za",
     phone: "+27 83 234 5678",
-    emergencyContact: { name: "Sarah Smith", phone: "+27 83 876 5432" }
+    emergencyContact: { name: "Sarah Smith", phone: "+27 83 876 5432" },
+    role: "player"
   },
   {
     id: 3,
@@ -223,7 +235,8 @@ export const mockPlayers: Player[] = [
     medicalNotes: "Recovered from knee surgery last season.",
     email: "david.johnson@uct.ac.za",
     phone: "+27 84 345 6789",
-    emergencyContact: { name: "Mary Johnson", phone: "+27 84 987 6543" }
+    emergencyContact: { name: "Mary Johnson", phone: "+27 84 987 6543" },
+    role: "player"
   },
   {
     id: 4,
@@ -248,7 +261,8 @@ export const mockPlayers: Player[] = [
     medicalNotes: "Mild back pain, under physiotherapy.",
     email: "alex.wilson@up.ac.za",
     phone: "+27 85 456 7890",
-    emergencyContact: { name: "Laura Wilson", phone: "+27 85 098 7654" }
+    emergencyContact: { name: "Laura Wilson", phone: "+27 85 098 7654" },
+    role: "player"
   },
   {
     id: 5,
@@ -275,7 +289,8 @@ export const mockPlayers: Player[] = [
     medicalNotes: "No injuries reported.",
     email: "peter.brown@uj.ac.za",
     phone: "+27 86 567 8901",
-    emergencyContact: { name: "Paul Brown", phone: "+27 86 109 8765" }
+    emergencyContact: { name: "Paul Brown", phone: "+27 86 109 8765" },
+    role: "player"
   },
   {
     id: 6,
@@ -300,7 +315,8 @@ export const mockPlayers: Player[] = [
     medicalNotes: "Recovering from minor hamstring strain.",
     email: "kevin.davis@stellenbosch.ac.za",
     phone: "+27 87 678 9012",
-    emergencyContact: { name: "Kim Davis", phone: "+27 87 210 9876" }
+    emergencyContact: { name: "Kim Davis", phone: "+27 87 210 9876" },
+    role: "player"
   },
   {
     id: 7,
@@ -325,7 +341,8 @@ export const mockPlayers: Player[] = [
     medicalNotes: "No current injuries.",
     email: "samuel.green@nwu.edu",
     phone: "+27 82 234 5678",
-    emergencyContact: { name: "Lisa Green", phone: "+27 82 876 5432" }
+    emergencyContact: { name: "Lisa Green", phone: "+27 82 876 5432" },
+    role: "player"
   },
   {
     id: 8,
@@ -350,7 +367,8 @@ export const mockPlayers: Player[] = [
     medicalNotes: "Recovering from ankle strain.",
     email: "nathan.white@wits.ac.za",
     phone: "+27 83 345 6789",
-    emergencyContact: { name: "Clara White", phone: "+27 83 987 6543" }
+    emergencyContact: { name: "Clara White", phone: "+27 83 987 6543" },
+    role: "player"
   },
   {
     id: 9,
@@ -375,7 +393,8 @@ export const mockPlayers: Player[] = [
     medicalNotes: "No injuries.",
     email: "ryan.king@uct.ac.za",
     phone: "+27 84 456 7890",
-    emergencyContact: { name: "Fiona King", phone: "+27 84 098 7654" }
+    emergencyContact: { name: "Fiona King", phone: "+27 84 098 7654" },
+    role: "player"
   },
   {
     id: 10,
@@ -400,7 +419,8 @@ export const mockPlayers: Player[] = [
     medicalNotes: "Recovering from minor knee surgery.",
     email: "liam.scott@up.ac.za",
     phone: "+27 85 567 8901",
-    emergencyContact: { name: "Ella Scott", phone: "+27 85 109 8765" }
+    emergencyContact: { name: "Ella Scott", phone: "+27 85 109 8765" },
+    role: "player"
   },
   {
     id: 11,
@@ -427,7 +447,8 @@ export const mockPlayers: Player[] = [
     medicalNotes: "No injuries.",
     email: "oliver.brown@uj.ac.za",
     phone: "+27 86 678 9012",
-    emergencyContact: { name: "Paul Brown", phone: "+27 86 210 9876" }
+    emergencyContact: { name: "Paul Brown", phone: "+27 86 210 9876" },
+    role: "player"
   },
   {
     id: 12,
@@ -452,7 +473,8 @@ export const mockPlayers: Player[] = [
     medicalNotes: "Minor groin strain, recovering.",
     email: "ethan.lewis@stellenbosch.ac.za",
     phone: "+27 87 789 0123",
-    emergencyContact: { name: "Emma Lewis", phone: "+27 87 321 0987" }
+    emergencyContact: { name: "Emma Lewis", phone: "+27 87 321 0987" },
+    role: "player"
   },
   {
     id: 13,
@@ -477,7 +499,8 @@ export const mockPlayers: Player[] = [
     medicalNotes: "No injuries.",
     email: "aiden.clark@nwu.edu",
     phone: "+27 82 345 6789",
-    emergencyContact: { name: "Mia Clark", phone: "+27 82 987 6543" }
+    emergencyContact: { name: "Mia Clark", phone: "+27 82 987 6543" },
+    role: "player"
   },
   {
     id: 14,
@@ -502,7 +525,8 @@ export const mockPlayers: Player[] = [
     medicalNotes: "No injuries.",
     email: "noah.adams@wits.ac.za",
     phone: "+27 83 456 7890",
-    emergencyContact: { name: "Lily Adams", phone: "+27 83 098 7654" }
+    emergencyContact: { name: "Lily Adams", phone: "+27 83 098 7654" },
+    role: "player"
   },
   {
     id: 15,
@@ -527,7 +551,8 @@ export const mockPlayers: Player[] = [
     medicalNotes: "No injuries.",
     email: "lucas.taylor@uct.ac.za",
     phone: "+27 84 567 8901",
-    emergencyContact: { name: "Sophia Taylor", phone: "+27 84 109 8765" }
+    emergencyContact: { name: "Sophia Taylor", phone: "+27 84 109 8765" },
+    role: "player"
   },
   {
     id: 16,
@@ -552,8 +577,33 @@ export const mockPlayers: Player[] = [
     medicalNotes: "Recovering from minor knee strain.",
     email: "mason.hall@up.ac.za",
     phone: "+27 85 678 9012",
-    emergencyContact: { name: "Olivia Hall", phone: "+27 85 210 9876" }
-  }
+    emergencyContact: { name: "Olivia Hall", phone: "+27 85 210 9876" },
+    role: "player"
+  },
+  {
+    id: 17,
+    name: "Lerato Molefe",
+    team: "NWU Eagles",
+    position: "Defender",
+    age: 23,
+    nationality: "South African",
+    goals: 1,
+    assists: 2,
+    appearances: 19,
+    gamesPlayed: 19,
+    yellowCards: 5,
+    redCards: 1,
+    joinDate: "2024-02-15",
+    previousTeam: "NWU Tigers",
+    jerseyNumber: 5,
+    height: 185,
+    weight: 80,
+    performance: 82,
+    email: "lerato.molefe@nwu.ac.za",
+    phone: "+27 72 555 6666",
+    emergencyContact: { name: "Nomsa Molefe", phone: "+27 76 444 5555" },
+    role: "player"
+  },
 ]
 
 
@@ -574,18 +624,91 @@ export const mockTeams: Team[] = [
 
 // Fixtures
 export const mockFixtures: Fixture[] = [
-  { id: 1, homeTeam: "NWU Eagles", awayTeam: "Wits Wolves", league: "Premier League", date: "2024-01-15", time: "15:00", venue: "NWU Stadium", status: "PENDING", round: "Round 19", createdBy: "Admin", submittedDate: "2025-09-18" },
-  { id: 2, homeTeam: "UCT Lions", awayTeam: "UP Tuks", league: "Premier League", date: "2024-01-15", time: "17:30", venue: "UCT Grounds", status: "upcoming", round: "Round 19", createdBy: "John", submittedDate: "2025-09-18" },
-  { id: 3, homeTeam: "UJ Orange", awayTeam: "Stellenbosch FC", league: "Premier League", date: "2024-01-16", time: "14:00", venue: "UJ Stadium", status: "PENDING", round: "Round 19", createdBy: "Mary", submittedDate: "2025-09-17" },
-  { id: 4, homeTeam: "Rhodes United", awayTeam: "UKZN Sharks", league: "Premier League", date: "2024-01-16", time: "16:30", venue: "Rhodes Park", status: "upcoming", round: "Round 19", createdBy: "Alex", submittedDate: "2025-09-16" },
+  { 
+    id: "1", 
+    homeTeam: "NWU Eagles", 
+    awayTeam: "Wits Wolves", 
+    league: "Premier League", 
+    date: "2025-10-10", 
+    time: "15:00", 
+    venue: "NWU Stadium", 
+    status: "PENDING", 
+    round: "Round 19", 
+    createdBy: "Admin", 
+    submittedDate: "2025-09-18" 
+  },
+  { 
+    id: "2", 
+    homeTeam: "UCT Lions", 
+    awayTeam: "UP Tuks", 
+    league: "Premier League", 
+    date: "2025-10-07", 
+    time: "17:30", 
+    venue: "UCT Grounds", 
+    status: "upcoming", 
+    round: "Round 19", 
+    createdBy: "John", 
+    submittedDate: "2025-09-18" 
+  },
+  { 
+    id: "3", 
+    homeTeam: "UJ Orange", 
+    awayTeam: "Wits Wolves", 
+    league: "Premier League", 
+    date: "2025-10-08", 
+    time: "14:00", 
+    venue: "UJ Stadium", 
+    status: "PENDING", 
+    round: "Round 19", 
+    createdBy: "Mary", 
+    submittedDate: "2025-09-17" 
+  },
+  { 
+    id: "4", 
+    homeTeam: "Rhodes United", 
+    awayTeam: "UKZN Sharks", 
+    league: "Premier League", 
+    date: "2025-10-10", 
+    time: "16:30", 
+    venue: "Rhodes Park", 
+    status: "upcoming", 
+    round: "Round 19", 
+    createdBy: "Alex", 
+    submittedDate: "2025-09-16" 
+  },
+  { 
+    id: "5", 
+    homeTeam: "NWU Eagles", 
+    awayTeam: "Stellenbosch University", 
+    league: "Premier League", 
+    date: "2025-10-05", 
+    time: "15:00", 
+    venue: "NWU Stadium", 
+    status: "PENDING", 
+    round: "Round 19", 
+    createdBy: "Admin", 
+    submittedDate: "2025-09-18" 
+  }
 ];
 
 
 
+export interface PlayerInvite {
+  id: string;
+  playerId: string;
+  playerName: string;
+  scouterId: string;
+  scouterName: string;
+  teamId: string;
+  message: string;
+  status: "pending" | "accepted" | "declined";
+  createdAt: string;
+}
+
 // Match Results Data
 export const mockResults: Fixture[] = [
   {
-    id: 5,
+    id: "5",
     homeTeam: "NWU Eagles",
     awayTeam: "UCT Lions",
     league: "Premier League",
@@ -600,7 +723,7 @@ export const mockResults: Fixture[] = [
     highlights: ["Goal by J. Doe (15')", "Goal by M. Smith (30')"],
   },
   {
-    id: 6,
+    id: "6",
     homeTeam: "Wits Wolves",
     awayTeam: "UP Tuks",
     league: "Premier League",
@@ -655,6 +778,57 @@ export const mockTeamRegistrations: TeamRegistration[] = [
 export const mockTopScorers = mockPlayers
   .sort((a, b) => b.goals - a.goals) // sort descending by goals
   .slice(0, 5); // top 5 scorers
+export interface ScoutingReport {
+  id: string                // e.g., `scout-${Date.now()}`
+  playerId: number          // unique ID of the player
+  playerName: string
+  age: number
+  position: string
+  teamId: number            // numeric ID for the team
+  currentTeam: string
+  league: string
+  scoutedBy: string
+  scoutDate: string
+  matchVenue: string
+  physicalAttributes: {
+    pace: number
+    strength: number
+    stamina: number
+    agility: number
+    height: string
+    weight: string
+  }
+  technicalSkills: {
+    passing: number
+    shooting: number
+    dribbling: number
+    crossing: number
+    finishing: number
+    firstTouch: number
+  }
+  mentalAttributes: {
+    vision: number
+    decisionMaking: number
+    workRate: number
+    leadership: number
+    composure: number
+    teamwork: number
+  }
+  potential: string
+  status: string
+  recommendedAction: string
+  estimatedValue: string
+  contractStatus: string
+  videos: string[]
+  strengths: string[]
+  weaknesses: string[]
+  notes: string
+  overallRating?: number
+  invited?: boolean          // NEW: tracks if invitation was sent
+}
+
+
+
 
 
 // Home Page Data
@@ -720,12 +894,14 @@ coach: {
     reason: "Led team to crucial 3-2 victory with tactical masterclass", },
 }
 // Mock scouting data aligned with existing players and teams
-export const mockScoutingReports = [
+export const mockScoutingReports: ScoutingReport[] = [
   {
-    id: 1,
+    id: `scout-${Date.now() + 1}`,
+    playerId: 1,
     playerName: "John Doe",
     age: 22,
     position: "Forward",
+    teamId: 101,
     currentTeam: "NWU Eagles",
     league: "Premier League",
     scoutedBy: "John Smith",
@@ -734,43 +910,25 @@ export const mockScoutingReports = [
     overallRating: 9.0,
     potential: "Very High",
     status: "Priority Target",
-    physicalAttributes: {
-      pace: 9,
-      strength: 7,
-      stamina: 8,
-      agility: 9,
-      height: "1.80m",
-      weight: "75kg",
-    },
-    technicalSkills: {
-      passing: 8,
-      shooting: 9,
-      dribbling: 9,
-      crossing: 7,
-      finishing: 9,
-      firstTouch: 8,
-    },
-    mentalAttributes: {
-      vision: 8,
-      decisionMaking: 9,
-      workRate: 9,
-      leadership: 7,
-      composure: 8,
-      teamwork: 9,
-    },
-    strengths: ["Clinical finisher", "Great pace", "Excellent dribbling", "Strong in attack"],
-    weaknesses: ["Occasionally loses focus", "Can be selfish with the ball"],
-    notes: "Top striker for NWU Eagles, consistent goal scorer, high potential for professional leagues.",
     recommendedAction: "Invite for trial",
     estimatedValue: "R250,000",
     contractStatus: "Available",
     videos: ["Match highlights vs UCT Lions", "Skills compilation"],
+    strengths: ["Clinical finisher", "Great pace", "Excellent dribbling", "Strong in attack"],
+    weaknesses: ["Occasionally loses focus", "Can be selfish with the ball"],
+    notes: "Top striker for NWU Eagles, consistent goal scorer, high potential for professional leagues.",
+    physicalAttributes: { pace: 9, strength: 7, stamina: 8, agility: 9, height: "1.80m", weight: "75kg" },
+    technicalSkills: { passing: 8, shooting: 9, dribbling: 9, crossing: 7, finishing: 9, firstTouch: 8 },
+    mentalAttributes: { vision: 8, decisionMaking: 9, workRate: 9, leadership: 7, composure: 8, teamwork: 9 },
+    invited: false
   },
   {
-    id: 2,
+    id: `scout-${Date.now() + 2}`,
+    playerId: 2,
     playerName: "Mike Smith",
     age: 21,
     position: "Midfielder",
+    teamId: 102,
     currentTeam: "Wits Wolves",
     league: "Premier League",
     scoutedBy: "Emma Davis",
@@ -779,43 +937,25 @@ export const mockScoutingReports = [
     overallRating: 8.7,
     potential: "High",
     status: "Recommended",
-    physicalAttributes: {
-      pace: 8,
-      strength: 7,
-      stamina: 9,
-      agility: 8,
-      height: "1.75m",
-      weight: "70kg",
-    },
-    technicalSkills: {
-      passing: 9,
-      shooting: 7,
-      dribbling: 8,
-      crossing: 7,
-      finishing: 7,
-      firstTouch: 8,
-    },
-    mentalAttributes: {
-      vision: 9,
-      decisionMaking: 8,
-      workRate: 9,
-      leadership: 6,
-      composure: 8,
-      teamwork: 9,
-    },
-    strengths: ["Excellent passing range", "High work rate", "Strong vision", "Creative playmaker"],
-    weaknesses: ["Needs to improve finishing", "Occasional defensive lapses"],
-    notes: "Central midfielder with excellent creativity and passing. Can control the tempo of the game.",
     recommendedAction: "Make offer",
     estimatedValue: "R220,000",
     contractStatus: "Under contract until 2025",
     videos: ["Match footage vs UP Tuks", "Passing highlights"],
+    strengths: ["Excellent passing range", "High work rate", "Strong vision", "Creative playmaker"],
+    weaknesses: ["Needs to improve finishing", "Occasional defensive lapses"],
+    notes: "Central midfielder with excellent creativity and passing. Can control the tempo of the game.",
+    physicalAttributes: { pace: 8, strength: 7, stamina: 9, agility: 8, height: "1.75m", weight: "70kg" },
+    technicalSkills: { passing: 9, shooting: 7, dribbling: 8, crossing: 7, finishing: 7, firstTouch: 8 },
+    mentalAttributes: { vision: 9, decisionMaking: 8, workRate: 9, leadership: 6, composure: 8, teamwork: 9 },
+    invited: false
   },
   {
-    id: 3,
+    id: `scout-${Date.now() + 3}`,
+    playerId: 3,
     playerName: "David Johnson",
     age: 23,
     position: "Forward",
+    teamId: 103,
     currentTeam: "UCT Lions",
     league: "Premier League",
     scoutedBy: "Mike Wilson",
@@ -824,43 +964,25 @@ export const mockScoutingReports = [
     overallRating: 8.2,
     potential: "High",
     status: "Under Review",
-    physicalAttributes: {
-      pace: 8,
-      strength: 6,
-      stamina: 8,
-      agility: 8,
-      height: "1.78m",
-      weight: "72kg",
-    },
-    technicalSkills: {
-      passing: 7,
-      shooting: 8,
-      dribbling: 8,
-      crossing: 6,
-      finishing: 8,
-      firstTouch: 8,
-    },
-    mentalAttributes: {
-      vision: 8,
-      decisionMaking: 8,
-      workRate: 8,
-      leadership: 7,
-      composure: 8,
-      teamwork: 8,
-    },
-    strengths: ["Good finisher", "Agile forward", "Works hard off the ball", "Smart positioning"],
-    weaknesses: ["Needs more consistency", "Can be isolated in matches"],
-    notes: "Promising forward who can adapt to multiple attacking roles. Shows solid scoring ability.",
     recommendedAction: "Continue monitoring",
     estimatedValue: "R180,000",
     contractStatus: "Under contract until 2025",
     videos: ["Goals vs UP Tuks", "Dribbling skills highlights"],
+    strengths: ["Good finisher", "Agile forward", "Works hard off the ball", "Smart positioning"],
+    weaknesses: ["Needs more consistency", "Can be isolated in matches"],
+    notes: "Promising forward who can adapt to multiple attacking roles. Shows solid scoring ability.",
+    physicalAttributes: { pace: 8, strength: 6, stamina: 8, agility: 8, height: "1.78m", weight: "72kg" },
+    technicalSkills: { passing: 7, shooting: 8, dribbling: 8, crossing: 6, finishing: 8, firstTouch: 8 },
+    mentalAttributes: { vision: 8, decisionMaking: 8, workRate: 8, leadership: 7, composure: 8, teamwork: 8 },
+    invited: false
   },
   {
-    id: 4,
+    id: `scout-${Date.now() + 4}`,
+    playerId: 4,
     playerName: "Alex Wilson",
     age: 24,
     position: "Defender",
+    teamId: 104,
     currentTeam: "UP Tuks",
     league: "Premier League",
     scoutedBy: "Sarah Brown",
@@ -869,43 +991,25 @@ export const mockScoutingReports = [
     overallRating: 8.0,
     potential: "Medium",
     status: "Recommended",
-    physicalAttributes: {
-      pace: 6,
-      strength: 9,
-      stamina: 8,
-      agility: 7,
-      height: "1.85m",
-      weight: "80kg",
-    },
-    technicalSkills: {
-      passing: 7,
-      shooting: 5,
-      dribbling: 6,
-      crossing: 6,
-      finishing: 4,
-      firstTouch: 7,
-    },
-    mentalAttributes: {
-      vision: 7,
-      decisionMaking: 8,
-      workRate: 8,
-      leadership: 8,
-      composure: 8,
-      teamwork: 9,
-    },
-    strengths: ["Strong tackling", "Good leadership", "Reliable defender", "Good aerial ability"],
-    weaknesses: ["Limited pace", "Can be beaten by fast attackers"],
-    notes: "Solid center-back, dependable in defense and good at organizing the backline.",
     recommendedAction: "Invite for trial",
     estimatedValue: "R150,000",
     contractStatus: "Under contract until 2025",
     videos: ["Defensive highlights vs NWU Eagles"],
+    strengths: ["Strong tackling", "Good leadership", "Reliable defender", "Good aerial ability"],
+    weaknesses: ["Limited pace", "Can be beaten by fast attackers"],
+    notes: "Solid center-back, dependable in defense and good at organizing the backline.",
+    physicalAttributes: { pace: 6, strength: 9, stamina: 8, agility: 7, height: "1.85m", weight: "80kg" },
+    technicalSkills: { passing: 7, shooting: 5, dribbling: 6, crossing: 6, finishing: 4, firstTouch: 7 },
+    mentalAttributes: { vision: 7, decisionMaking: 8, workRate: 8, leadership: 8, composure: 8, teamwork: 9 },
+    invited: false
   },
   {
-    id: 5,
+    id: `scout-${Date.now() + 5}`,
+    playerId: 5,
     playerName: "Peter Brown",
     age: 25,
     position: "Goalkeeper",
+    teamId: 105,
     currentTeam: "UJ Orange",
     league: "Premier League",
     scoutedBy: "Emma Davis",
@@ -914,43 +1018,25 @@ export const mockScoutingReports = [
     overallRating: 8.5,
     potential: "Medium",
     status: "Recommended",
-    physicalAttributes: {
-      pace: 5,
-      strength: 8,
-      stamina: 7,
-      agility: 8,
-      height: "1.90m",
-      weight: "82kg",
-    },
-    technicalSkills: {
-      passing: 6,
-      shooting: 3,
-      dribbling: 5,
-      crossing: 4,
-      finishing: 2,
-      firstTouch: 6,
-    },
-    mentalAttributes: {
-      vision: 7,
-      decisionMaking: 9,
-      workRate: 8,
-      leadership: 9,
-      composure: 9,
-      teamwork: 8,
-    },
-    strengths: ["Shot stopping", "Leadership", "Aerial ability", "Calm under pressure"],
-    weaknesses: ["Distribution can improve", "Limited pace off the line"],
-    notes: "Reliable goalkeeper with strong leadership skills. Key asset for UJ Orange.",
     recommendedAction: "Make offer",
     estimatedValue: "R200,000",
     contractStatus: "Under contract until 2025",
     videos: ["Clean sheets highlights", "Key saves compilation"],
+    strengths: ["Shot stopping", "Leadership", "Aerial ability", "Calm under pressure"],
+    weaknesses: ["Distribution can improve", "Limited pace off the line"],
+    notes: "Reliable goalkeeper with strong leadership skills. Key asset for UJ Orange.",
+    physicalAttributes: { pace: 5, strength: 8, stamina: 7, agility: 8, height: "1.90m", weight: "82kg" },
+    technicalSkills: { passing: 6, shooting: 3, dribbling: 5, crossing: 4, finishing: 2, firstTouch: 6 },
+    mentalAttributes: { vision: 7, decisionMaking: 9, workRate: 8, leadership: 9, composure: 9, teamwork: 8 },
+    invited: false
   },
   {
-    id: 6,
+    id: `scout-${Date.now() + 6}`,
+    playerId: 6,
     playerName: "Kevin Davis",
     age: 20,
     position: "Midfielder",
+    teamId: 106,
     currentTeam: "Stellenbosch FC",
     league: "Premier League",
     scoutedBy: "Mike Wilson",
@@ -959,68 +1045,36 @@ export const mockScoutingReports = [
     overallRating: 8.3,
     potential: "High",
     status: "Recommended",
-    physicalAttributes: {
-      pace: 8,
-      strength: 7,
-      stamina: 9,
-      agility: 8,
-      height: "1.77m",
-      weight: "73kg",
-    },
-    technicalSkills: {
-      passing: 9,
-      shooting: 7,
-      dribbling: 8,
-      crossing: 7,
-      finishing: 7,
-      firstTouch: 8,
-    },
-    mentalAttributes: {
-      vision: 9,
-      decisionMaking: 8,
-      workRate: 9,
-      leadership: 6,
-      composure: 8,
-      teamwork: 9,
-    },
-    strengths: ["Excellent passing", "High work rate", "Vision and creativity", "Agile midfielder"],
-    weaknesses: ["Needs to improve shooting consistency"],
-    notes: "Creative midfielder, strong in attack and build-up play. High potential for development.",
     recommendedAction: "Invite for trial",
     estimatedValue: "R180,000",
     contractStatus: "Available",
     videos: ["Match highlights vs Rhodes United", "Passing and assists compilation"],
-  },
+    strengths: ["Excellent passing", "High work rate", "Vision and creativity", "Agile midfielder"],
+    weaknesses: ["Needs to improve shooting consistency"],
+    notes: "Creative midfielder, strong in attack and build-up play. High potential for development.",
+    physicalAttributes: { pace: 8, strength: 7, stamina: 9, agility: 8, height: "1.77m", weight: "73kg" },
+    technicalSkills: { passing: 9, shooting: 7, dribbling: 8, crossing: 7, finishing: 7, firstTouch: 8 },
+    mentalAttributes: { vision: 9, decisionMaking: 8, workRate: 9, leadership: 6, composure: 8, teamwork: 9 },
+    invited: false
+  }
 ]
 
-export const mockWatchlist = [
-{
-id: 1,
-playerName: "Alex Rodriguez",
-age: 20,
-position: "Goalkeeper",
-currentTeam: "Coastal FC",
-league: "Third Division",
-addedBy: "Scout Team",
-addedDate: "2024-03-01",
-priority: "High",
-nextScoutingDate: "2024-03-25",
-notes: "Promising young keeper with good reflexes",
-},
-{
-id: 2,
-playerName: "Lisa Chen",
-age: 18,
-position: "Midfielder",
-currentTeam: "University Women",
-league: "University League",
-addedBy: "Emma Davis",
-addedDate: "2024-02-28",
-priority: "Medium",
-nextScoutingDate: "2024-03-30",
-notes: "Technical midfielder with good passing range",
-},
-]
+export const mockWatchlist = mockPlayers.map((player) => ({
+  id: player.id,
+  playerName: player.name,
+  age: player.age,
+  position: player.position,
+  currentTeam: player.team,
+  league: "Premier League", // You can update with actual league if known
+  addedBy: "Scout Team",    // Default or dynamic
+  addedDate: new Date().toISOString().split("T")[0], // Today's date
+  priority: "Medium",       // Default priority, can be updated
+  nextScoutingDate: new Date(new Date().setDate(new Date().getDate() + 30))
+    .toISOString()
+    .split("T")[0],         // Default next scouting 30 days from now
+  notes: "Scouting required.", // Default note
+}));
+
 
 // mockData.ts
 export interface FAQ {
@@ -1080,38 +1134,58 @@ export const mockTeamStats: TeamStats = {
     redCards: mockPlayers.reduce((sum, p) => sum + p.redCards, 0),
   },
 }
-
+// Sample Announcements
 export const mockAnnouncements: Announcement[] = [
   {
     id: "1",
-    title: "Training Schedule Update",
-    message: "Training has been moved to 6:00 AM tomorrow due to field maintenance.",
-    date: "2025-01-20",
-    priority: "high",
-    recipients: ["all"],
+    title: "Training Schedule",
+    message: "Next week's training will be on Monday and Wednesday at 16:00.",
+    date: "2025-09-29",
+    priority: "medium",
+    recipients: [],
+    team: "NWU Eagles",
   },
   {
     id: "2",
     title: "Team Meeting",
-    message: "Mandatory team meeting this Friday at 4:00 PM in the conference room.",
-    date: "2025-01-19",
-    priority: "medium",
-    recipients: ["all"],
+    message: "Meeting with all forwards to discuss strategy.",
+    date: "2025-09-28",
+    priority: "high",
+    recipients: [],
+    team: "Wits Wolves",
   },
   {
     id: "3",
-    title: "Medical Check-ups",
-    message: "Annual medical check-ups scheduled for next week. Please see the schedule posted on the board.",
-    date: "2025-01-18",
+    title: "Medical Checkup",
+    message: "Mandatory medical checkup on Friday at 10:00.",
+    date: "2025-09-27",
     priority: "low",
-    recipients: ["all"],
+    recipients: [],
+    team: "NWU Eagles",
+  },
+  {
+    id: "4",
+    title: "Extra Training Session",
+    message: "Extra session for goalkeepers on Thursday at 14:00.",
+    date: "2025-09-30",
+    priority: "high",
+    recipients: [],
+    team: "NWU Eagles",
+  },
+  {
+    id: "5",
+    title: "Strategy Meeting",
+    message: "Discuss defensive tactics with all defenders.",
+    date: "2025-09-26",
+    priority: "medium",
+    recipients: [],
+    team: "Wits Wolves",
   },
 ]
-
 export const mockLeagueStandings: LeagueStanding[] = [
   {
     position: 1,
-    team: "University of Cape Town",
+    team: "NWU Eagles",
     played: 16,
     won: 12,
     drawn: 3,
@@ -1123,7 +1197,7 @@ export const mockLeagueStandings: LeagueStanding[] = [
   },
   {
     position: 2,
-    team: "NWU Eagles",
+    team: "Wits Wolves",
     played: 16,
     won: 11,
     drawn: 2,
@@ -1135,7 +1209,7 @@ export const mockLeagueStandings: LeagueStanding[] = [
   },
   {
     position: 3,
-    team: "Wits University",
+    team: "UCT Lions",
     played: 16,
     won: 9,
     drawn: 4,
@@ -1147,7 +1221,7 @@ export const mockLeagueStandings: LeagueStanding[] = [
   },
   {
     position: 4,
-    team: "Stellenbosch University",
+    team: "UP Tuks",
     played: 16,
     won: 8,
     drawn: 3,
@@ -1159,7 +1233,7 @@ export const mockLeagueStandings: LeagueStanding[] = [
   },
   {
     position: 5,
-    team: "University of Pretoria",
+    team: "UJ Orange",
     played: 16,
     won: 6,
     drawn: 5,
@@ -1169,7 +1243,20 @@ export const mockLeagueStandings: LeagueStanding[] = [
     goalDifference: -3,
     points: 23,
   },
+  {
+    position: 6,
+    team: "Stellenbosch FC",
+    played: 16,
+    won: 5,
+    drawn: 3,
+    lost: 8,
+    goalsFor: 20,
+    goalsAgainst: 27,
+    goalDifference: -7,
+    points: 18,
+  },
 ]
+
 
 export const mockFieldBookings: FieldBooking[] = [
   {
@@ -1242,9 +1329,10 @@ export const mockPlayerRequests: PlayerRequest[] = [
 
 export const mockMedicalRecords: MedicalRecord[] = [
   {
-    id: 1,
+    id: "1",
     playerId: "1",
-    playerName: mockPlayers.find(p => p.id === 1)?.name || "Unknown", // Added name
+    playerName: mockPlayers.find((p) => p.id === 1)?.name || "Unknown", // use number
+    team: mockPlayers.find((p) => p.id === 1)?.team || "Unknown",
     date: "2025-01-15",
     type: "injury",
     description: "Minor ankle sprain during training",
@@ -1254,9 +1342,10 @@ export const mockMedicalRecords: MedicalRecord[] = [
     restrictions: ["No running for 1 week", "Light training only"],
   },
   {
-    id: 2,
+    id: "2",
     playerId: "2",
-    playerName: mockPlayers.find(p => p.id === 2)?.name || "Unknown", // Added name
+    playerName: mockPlayers.find((p) => p.id === 2)?.name || "Unknown",
+    team: mockPlayers.find((p) => p.id === 2)?.team || "Unknown",
     date: "2025-01-10",
     type: "checkup",
     description: "Annual fitness assessment",
@@ -1264,9 +1353,10 @@ export const mockMedicalRecords: MedicalRecord[] = [
     status: "resolved",
   },
   {
-    id: 3,
+    id: "3",
     playerId: "3",
-    playerName: mockPlayers.find(p => p.id === 3)?.name || "Unknown", // Added name
+    playerName: mockPlayers.find((p) => p.id === 3)?.name || "Unknown",
+    team: mockPlayers.find((p) => p.id === 3)?.team || "Unknown",
     date: "2025-01-12",
     type: "treatment",
     description: "Physiotherapy for knee rehabilitation",
@@ -1276,6 +1366,7 @@ export const mockMedicalRecords: MedicalRecord[] = [
     medications: ["Anti-inflammatory gel"],
   },
 ]
+
 
 
 export interface PlayerRequest {
@@ -1291,9 +1382,10 @@ export interface PlayerRequest {
   skillLevel: "beginner" | "intermediate" | "advanced"
 }
 export interface MedicalRecord {
-  id: number
+  id: string
   playerId: string
-  playerName?: string   // ✅ Added
+  playerName?: string
+  team?: string          // ✅ Added team
   date: string
   type: "checkup" | "injury" | "treatment" | "clearance"
   description: string
@@ -1305,27 +1397,42 @@ export interface MedicalRecord {
 }
 
 
+
 export interface Match {
   id: string
-  opponent: string
-  date: string
-  time: string
+  homeTeam: string
+  awayTeam: string
+  date: string // in YYYY-MM-DD format
+  time: string // in HH:mm format
   venue: string
-  isHome: boolean
+  isHome?: boolean // optional, indicates if the current team is home
+  status?: "upcoming" | "completed" | "PENDING" // for badge display in MatchCard
   result?: {
     homeScore: number
     awayScore: number
     status: "won" | "lost" | "draw"
   }
 }
+export interface User {
+  id: string;
+  name: string;
+  role: "admin" | "coach" | "player" | "scouter" ; // all possible roles
+  team?: string;   // optional, relevant for coaches or players
+  // optional, for authentication
+  avatar?: string; // URL to avatar image
+  email: string; // in a real app, passwords should be hashed and not stored in plain text
+}
+
 
 export interface Announcement {
   id: string
+  name?: string // optional, could be the announcer's name
   title: string
   message: string
   date: string
   priority: "low" | "medium" | "high"
-  recipients: string[]
+  recipients: string[] // optional individual recipients
+  team: string // the team this announcement belongs to
 }
 
 export interface Coach {
@@ -1373,100 +1480,20 @@ export interface FieldBooking {
 }
 // mockData.ts
 
-export const mockRecentMatches = [
-  {
-    id: "4",
-    opponent: "University of Cape Town",
-    date: "2025-01-15",
-    time: "15:00",
-    venue: "UCT Stadium",
-    isHome: false,
-    result: {
-      homeScore: 1,
-      awayScore: 2,
-      status: "won",
-    },
-  },
-  {
-    id: "5",
-    opponent: "Rhodes University",
-    date: "2025-01-08",
-    time: "14:30",
-    venue: "NWU Sports Complex",
-    isHome: true,
-    result: {
-      homeScore: 3,
-      awayScore: 1,
-      status: "won",
-    },
-  },
-  {
-    id: "6",
-    opponent: "University of Johannesburg",
-    date: "2025-01-01",
-    time: "16:00",
-    venue: "UJ Stadium",
-    isHome: false,
-    result: {
-      homeScore: 2,
-      awayScore: 2,
-      status: "draw",
-    },
-  },
-  {
-    id: "7",
-    opponent: "Free State University",
-    date: "2024-12-18",
-    time: "15:30",
-    venue: "NWU Sports Complex",
-    isHome: true,
-    result: {
-      homeScore: 1,
-      awayScore: 3,
-      status: "lost",
-    },
-  },
-  {
-    id: "8",
-    opponent: "Nelson Mandela University",
-    date: "2024-12-11",
-    time: "14:00",
-    venue: "NMU Stadium",
-    isHome: false,
-    result: {
-      homeScore: 0,
-      awayScore: 1,
-      status: "won",
-    },
-  },
+
+// Mock users data
+export const users: User[] = [
+  { id: "1", name: "Admin User", email: "admin@nwu.ac.za", password: "admin123", role: "admin" },
+  { id: "2", name: "NWU Coach", email: "coach@nwu.ac.za", password: "coach123", role: "coach", team: "NWU Eagles" },
+  { id: "3", name: "Wits Coach", email: "witscoach@wits.ac.za", password: "wits123", role: "coach", team: "Wits Wolves" },
+  { id: "4", name: "UCT Coach", email: "uctcoach@uct.ac.za", password: "uct123", role: "coach", team: "UCT Lions" },
+
+  // Scouters
+  { id: "5", name: "Scout Johnson", email: "scout1@nwu.ac.za", password: "scout123", role: "scouter" },
+  { id: "6", name: "Alice Scouter", email: "scout2@nwu.ac.za", password: "scout123", role: "scouter" },
+  { id: "7", name: "Bob Scouter", email: "scout3@nwu.ac.za", password: "scout123", role: "scouter" },
 ]
 
-export const mockUpcomingMatches: Match[] = [
-  {
-    id: "1",
-    opponent: "University of Pretoria",
-    date: "2025-01-25",
-    time: "15:00",
-    venue: "NWU Sports Complex",
-    isHome: true,
-  },
-  {
-    id: "2",
-    opponent: "Wits University",
-    date: "2025-02-01",
-    time: "14:00",
-    venue: "Wits Stadium",
-    isHome: false,
-  },
-  {
-    id: "3",
-    opponent: "Stellenbosch University",
-    date: "2025-02-08",
-    time: "16:00",
-    venue: "NWU Sports Complex",
-    isHome: true,
-  },
-]
 export const mockCoach: Coach = {
   id: 1,
   name: "Coach Mike Johnson",
@@ -1476,3 +1503,65 @@ export const mockCoach: Coach = {
 }
 
 
+// Player Invites mock array
+export const mockPlayerInvites: PlayerInvite[] = []
+
+export const getAnnouncements = (teamName: string): Announcement[] => {
+  return mockAnnouncements
+    .filter((a) => a.team === teamName)
+    .sort(
+      (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+    )
+}
+
+export const addAnnouncement = (announcement: Omit<Announcement, "id" | "createdAt">): Announcement => {
+  const newAnnouncement: Announcement = {
+    ...announcement,
+    id: `ann-${Date.now()}`,
+    date: new Date().toISOString(),
+  }
+
+  // Add the new announcement to the start of the array
+  mockAnnouncements.unshift(newAnnouncement)
+
+  return newAnnouncement
+}
+export const getScoutReports = (team: string): ScoutingReport[] => {
+  return mockScoutingReports
+    .filter((r) => r?.currentTeam === team)
+    .sort((a, b) => new Date(b.scoutDate).getTime() - new Date(a.scoutDate).getTime())
+}
+
+
+export const addScoutReport = (report: Omit<ScoutingReport, "id" | "scoutDate">): ScoutingReport => {
+  const newReport: ScoutingReport = {
+    ...report,
+    id: Date.now().toString(), 
+    scoutDate: new Date().toISOString().split("T")[0], // today
+  }
+  mockScoutingReports.unshift(newReport)
+  return newReport
+}
+
+
+// --- Player Invites helpers ---
+export const getPlayerInvites = (playerId: string) => {
+  return mockPlayerInvites
+    .filter((i) => i.playerId === playerId)
+    .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+}
+
+export const addPlayerInvite = (invite: Omit<PlayerInvite, "id" | "createdAt">) => {
+  const newInvite: PlayerInvite = {
+    ...invite,
+    id: `invite-${Date.now()}`,
+    createdAt: new Date().toISOString(),
+  }
+  mockPlayerInvites.unshift(newInvite)
+  return newInvite
+}
+
+export const updateInviteStatus = (inviteId: string, status: "accepted" | "declined") => {
+  const invite = mockPlayerInvites.find((i) => i.id === inviteId)
+  if (invite) invite.status = status
+}

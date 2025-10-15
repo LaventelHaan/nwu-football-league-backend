@@ -1,4 +1,4 @@
-// File: /workspaces/nwu-football-league-backend/app/page.tsx
+// File: C:\Users\User\Downloads\nwu-sports-manager1 (3)\nwu-sports-manager1\app\page.tsx
 import * as entry from '../../../app/page.js'
 import type { ResolvingMetadata, ResolvingViewport } from 'next/dist/lib/metadata/types/metadata-interface.js'
 

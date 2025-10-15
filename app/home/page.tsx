@@ -296,7 +296,6 @@ export default function HomePage() {
               <CardContent className="space-y-6">
                 {mockHomeData.allFixtures.map((match) => (
                   <div
-                    key={match.id}
                     className="bg-gradient-to-r from-muted/20 via-muted/10 to-muted/20 border border-muted/30 rounded-xl p-6 hover:shadow-lg hover:bg-gradient-to-r hover:from-muted/30 hover:via-muted/15 hover:to-muted/30 transition-all duration-300 backdrop-blur-sm"
                   >
                     <div className="flex justify-between items-center mb-4">

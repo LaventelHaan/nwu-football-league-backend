@@ -18,63 +18,61 @@ import {
 } from "lucide-react"
 import Link from "next/link"
 
-// Mock data for admin dashboard
+// Aligned dashboard metrics based on centralized mock data
+import { mockResults,mockTeamRegistrations, mockFixtures, mockPlayers, mockTeams } from "@/lib/mockData";
+
 const dashboardMetrics = {
-  pendingTeamApplications: 12,
-  unapprovedFixtures: 8,
-  totalUsers: 1247,
-  activeLeagues: 6,
-  totalVenues: 15,
+  // Count of team applications that are still pending
+  pendingTeamApplications: mockTeamRegistrations.filter(reg => reg.status === "PENDING").length,
+
+  // Count of fixtures that are pending approval
+  unapprovedFixtures: mockFixtures.filter(fix => fix.status === "PENDING").length,
+
+  // Total users (admin, coaches, players, scouters) — assuming you have a centralized users array
+  totalUsers: 1247, // Replace with actual count if you have mockUsers: mockUsers.length
+
+  // Count of active leagues based on unique league names in fixtures or registrations
+  activeLeagues: Array.from(new Set(mockFixtures.map(f => f.league))).length,
+
+  // Total venues used across all fixtures (unique)
+  totalVenues: Array.from(new Set(mockFixtures.map(f => f.venue))).length,
+
+  // Recent activity: you can generate dynamically from team registrations and fixtures
   recentActivity: [
-    {
-      id: 1,
-      action: "Team Registration",
-      description: "Eagles FC submitted registration application",
-      timestamp: "2 minutes ago",
-      type: "pending",
-      user: "John Smith",
-    },
-    {
-      id: 2,
-      action: "Fixture Created",
-      description: "Lions vs Tigers match scheduled for March 15",
-      timestamp: "15 minutes ago",
-      type: "approved",
-      user: "Coach Williams",
-    },
-    {
-      id: 3,
-      action: "User Registration",
-      description: "New player Sarah Johnson registered",
-      timestamp: "1 hour ago",
-      type: "completed",
-      user: "Sarah Johnson",
-    },
-    {
-      id: 4,
-      action: "Venue Booking",
-      description: "Main Stadium booked for championship final",
-      timestamp: "2 hours ago",
-      type: "approved",
-      user: "Admin User",
-    },
-    {
-      id: 5,
-      action: "League Update",
-      description: "Premier League standings updated",
-      timestamp: "3 hours ago",
-      type: "completed",
-      user: "System",
-    },
+    ...mockTeamRegistrations
+      .slice(-3)
+      .map(reg => ({
+        id: reg.id,
+        action: "Team Registration",
+        description: `${reg.name} submitted registration application`,
+        timestamp: "Just now", // or derive from submittedDate
+        type: reg.status === "PENDING" ? "pending" : "approved",
+        user: reg.coach || reg.organizer || "System",
+      })),
+    ...mockFixtures
+      .slice(-3)
+      .map(fix => ({
+        id: fix.id,
+        action: "Fixture Created",
+        description: `${fix.homeTeam} vs ${fix.awayTeam} scheduled`,
+        timestamp: "Just now",
+        type: fix.status === "PENDING" ? "pending" : "approved",
+        user: fix.createdBy || "System",
+      })),
   ],
+
+  // System stats derived from fixtures and players
   systemStats: {
-    totalMatches: 156,
-    completedMatches: 142,
-    upcomingMatches: 14,
-    totalGoals: 387,
-    averageGoalsPerMatch: 2.7,
+    totalMatches: mockFixtures.length + mockResults.length,
+    completedMatches: mockResults.length,
+    upcomingMatches: mockFixtures.filter(f => f.status === "upcoming").length,
+    totalGoals: mockPlayers.reduce((sum, p) => sum + p.goals, 0),
+    averageGoalsPerMatch: parseFloat(
+      (mockPlayers.reduce((sum, p) => sum + p.goals, 0) / (mockFixtures.length + mockResults.length)).toFixed(2)
+    ),
   },
-}
+};
+
 
 export default function AdminDashboard() {
   const getActivityIcon = (type: string) => {

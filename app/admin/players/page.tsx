@@ -11,26 +11,14 @@ import { Label } from "@/components/ui/label"
 import { Users, Search, Eye, Edit, Trash2, Calendar, MapPin, Mail, Phone, Trophy, Activity } from "lucide-react"
 import Link from "next/link"
 //import { mockNews,mockTopScorers,mockStandings,mockHomeData,mockFixtures, mockTeamOfTheWeek } from "@/lib/mockData" 
-
-import { useEffect } from "react"
-import { getPlayers } from "@/lib/adminApi"
+import { mockPlayers,mockNews,mockTopScorers,mockStandings,mockHomeData,mockFixtures, mockTeamOfTheWeek } from "@/lib/mockData" 
 
 const statusOptions = ["ALL", "Active", "Injured", "Suspended", "Transferred"]
 const positionOptions = ["ALL", "Goalkeeper", "Defender", "Midfielder", "Forward"]
 const teamOptions = ["ALL", "Eagles FC", "Lions United", "Tigers FC", "Women's United"]
 
 export default function PlayerManagement() {
-  const [players, setPlayers] = useState<any[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    setLoading(true)
-    getPlayers()
-      .then(setPlayers)
-      .catch((e) => setError(e.message))
-      .finally(() => setLoading(false))
-  }, [])
+  const [players, setPlayers] = useState(mockPlayers)
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("ALL")
   const [positionFilter, setPositionFilter] = useState("ALL")
@@ -70,19 +58,9 @@ export default function PlayerManagement() {
     }
   }
 
-  // TODO: Replace with backend DELETE /api/players/:id
-  const handleDeletePlayer = async (playerId: number) => {
+  const handleDeletePlayer = (playerId: number) => {
     if (confirm("Are you sure you want to delete this player?")) {
-      try {
-        setLoading(true)
-        const res = await fetch(`http://localhost:4000/api/players/${playerId}`, { method: "DELETE" })
-        if (!res.ok) throw new Error("Failed to delete player")
-        setPlayers(players.filter((p) => p.player_id !== playerId && p.id !== playerId))
-      } catch (e: any) {
-        setError(e.message)
-      } finally {
-        setLoading(false)
-      }
+      setPlayers(players.filter((p) => p.id !== playerId))
     }
   }
 
