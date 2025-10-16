@@ -1244,7 +1244,7 @@ export const mockLeagueStandings: LeagueStanding[] = [
 
 export const mockFieldBookings: FieldBooking[] = [
   {
-    id: "1",
+    id: 1,
     date: "2025-01-22",
     time: "06:00",
     duration: 2,
@@ -1254,7 +1254,7 @@ export const mockFieldBookings: FieldBooking[] = [
     notes: "Focus on set pieces",
   },
   {
-    id: "2",
+    id: 2,
     date: "2025-01-24",
     time: "16:00",
     duration: 1.5,
@@ -1263,7 +1263,7 @@ export const mockFieldBookings: FieldBooking[] = [
     status: "pending",
   },
   {
-    id: "3",
+    id: 3,
     date: "2025-01-26",
     time: "08:00",
     duration: 2,
@@ -1433,7 +1433,7 @@ export interface LeagueStanding {
 }
 
 export interface FieldBooking {
-  id: string
+  id: number
   date: string
   time: string
   duration: number // in hours

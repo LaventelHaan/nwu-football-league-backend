@@ -41,6 +41,7 @@ export function MedicalRecords({ records, players, onCreateRecord, onUpdateRecor
     e.preventDefault()
     const newRecord: Omit<MedicalRecord, "id"> = {
       ...formData,
+      // Convert comma-separated strings to arrays for the API
       restrictions: formData.restrictions ? formData.restrictions.split(",").map((r) => r.trim()) : undefined,
       medications: formData.medications ? formData.medications.split(",").map((m) => m.trim()) : undefined,
       followUpDate: formData.followUpDate || undefined,

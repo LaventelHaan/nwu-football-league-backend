@@ -38,7 +38,10 @@ function createTables() {
   const dropQueries = [
     'DROP TABLE IF EXISTS users',
     'DROP TABLE IF EXISTS login_table',
-    'DROP TABLE IF EXISTS register_table'
+    'DROP TABLE IF EXISTS register_table',
+    'DROP TABLE IF EXISTS field_bookings',  // Add this to force recreation
+    'DROP TABLE IF EXISTS medical_records',  // Add this to force recreation
+    'DROP TABLE IF EXISTS venues'  // Add this to force recreation
   ];
   
   let completed = 0;
@@ -159,6 +162,40 @@ function createUsersTable() {
       updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
     )
   `;
+
+  // Create field_bookings table
+  const createFieldBookingsTable = `
+    CREATE TABLE IF NOT EXISTS field_bookings (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      coach_id INT,
+      date DATE NOT NULL,
+      time TIME NOT NULL,
+      duration DECIMAL(3,1) NOT NULL,
+      field VARCHAR(255) NOT NULL,
+      purpose VARCHAR(255) NOT NULL,
+      notes TEXT,
+      status ENUM('pending', 'confirmed', 'cancelled') DEFAULT 'pending',
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )
+  `;
+  
+  // Create leagues table
+  const createLeaguesTable = `
+    CREATE TABLE IF NOT EXISTS leagues (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      name VARCHAR(255) NOT NULL UNIQUE,
+      description TEXT,
+      status ENUM('active', 'inactive', 'completed') DEFAULT 'active',
+      total_teams INT DEFAULT 0,
+      total_matches INT DEFAULT 0,
+      current_season VARCHAR(50) DEFAULT '2024-2025',
+      champion VARCHAR(255),
+      founded_year VARCHAR(10),
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )
+  `;
   
   // Execute table creation queries
   db.query(createUsersTable, (err) => {
@@ -226,6 +263,104 @@ function createUsersTable() {
           console.log('✅ fixtures table already contains data, skipping seed');
         }
       });
+    }
+  });
+  
+  db.query(createFieldBookingsTable, (err) => {
+    if (err) {
+      console.error('Error creating field_bookings table:', err);
+    } else {
+      console.log('✅ field_bookings table created successfully');
+    }
+  });
+
+  db.query(createLeaguesTable, (err) => {
+    if (err) {
+      console.error('Error creating leagues table:', err);
+    } else {
+      console.log('✅ leagues table created successfully');
+      
+      // Seed leagues table with mock data if empty
+      db.query('SELECT COUNT(*) as count FROM leagues', (countErr, countResult) => {
+        if (countErr) {
+          console.error('Error checking leagues count:', countErr);
+        } else if (countResult[0].count === 0) {
+          // Only seed if table is empty
+          const seedLeagues = `
+            INSERT INTO leagues (name, description, status, total_teams, total_matches, current_season, champion, founded_year) VALUES
+            ('Premier League', 'Top tier professional football league', 'active', 16, 240, '2024-2025', 'NWU Eagles', '2018'),
+            ('Championship Division', 'Second tier competitive league', 'active', 12, 132, '2024-2025', 'UP Tuks', '2019'),
+            ('Women\'s Premier League', 'Elite women\'s football competition', 'active', 8, 56, '2024-2025', 'UJ Orange', '2020')
+          `;
+          
+          db.query(seedLeagues, (seedErr) => {
+            if (seedErr) {
+              console.error('Error seeding leagues:', seedErr);
+            } else {
+              console.log('✅ leagues table seeded with mock data');
+            }
+          });
+        } else {
+          console.log('✅ leagues table already contains data, skipping seed');
+        }
+      });
+    }
+  });
+
+  // Create medical_records table
+  const createMedicalRecordsTable = `
+    CREATE TABLE IF NOT EXISTS medical_records (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      player_id INT,
+      date DATE NOT NULL,
+      type ENUM('checkup', 'injury', 'treatment', 'clearance') NOT NULL,
+      description TEXT NOT NULL,
+      doctor VARCHAR(255) NOT NULL,
+      status ENUM('active', 'resolved', 'ongoing') DEFAULT 'active',
+      follow_up_date DATE,
+      restrictions TEXT,
+      medications TEXT,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )
+  `;
+
+  // Create venues table
+  const createVenuesTable = `
+    CREATE TABLE IF NOT EXISTS venues (
+      id INT AUTO_INCREMENT PRIMARY KEY,
+      name VARCHAR(255) NOT NULL,
+      address TEXT NOT NULL,
+      capacity INT NOT NULL,
+      type ENUM('Stadium', 'Multi-purpose', 'Training Ground', 'Indoor Arena') NOT NULL,
+      surface ENUM('Natural Grass', 'Artificial Turf', 'Hybrid Grass', 'Indoor Court') NOT NULL,
+      status ENUM('Active', 'Maintenance', 'Inactive') DEFAULT 'Active',
+      facilities JSON,
+      manager VARCHAR(255),
+      manager_phone VARCHAR(20),
+      manager_email VARCHAR(255),
+      fields JSON,
+      bookings INT DEFAULT 0,
+      last_maintenance DATE,
+      next_maintenance DATE,
+      created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+      updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+    )
+  `;
+
+  db.query(createMedicalRecordsTable, (err) => {
+    if (err) {
+      console.error('Error creating medical_records table:', err);
+    } else {
+      console.log('✅ medical_records table created successfully');
+    }
+  });
+
+  db.query(createVenuesTable, (err) => {
+    if (err) {
+      console.error('Error creating venues table:', err);
+    } else {
+      console.log('✅ venues table created successfully');
     }
   });
 }
@@ -791,6 +926,647 @@ app.get('/api/results', (req, res) => {
   });
 });
 
+// Field Bookings endpoints
+app.get('/api/field-bookings', (req, res) => {
+  console.log('📅 Getting all field bookings');
+  const query = 'SELECT * FROM field_bookings ORDER BY date, time';
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error('❌ Error fetching field bookings:', err);
+      return res.status(500).json({ error: 'Database error: ' + err.message });
+    }
+    console.log(`✅ Found ${results.length} field bookings`);
+    res.json(results);
+  });
+});
+
+app.get('/api/field-bookings/:coachId', (req, res) => {
+  const { coachId } = req.params;
+  console.log('📅 Getting field bookings for coach:', coachId);
+  const query = 'SELECT * FROM field_bookings WHERE coach_id = ? ORDER BY date, time';
+  db.query(query, [coachId], (err, results) => {
+    if (err) {
+      console.error('❌ Error fetching field bookings:', err);
+      return res.status(500).json({ error: 'Database error: ' + err.message });
+    }
+    console.log(`✅ Found ${results.length} field bookings for coach ${coachId}`);
+    res.json(results);
+  });
+});
+
+app.post('/api/field-bookings', (req, res) => {
+  console.log('🔥 FIELD BOOKING API CALLED - Received body:', JSON.stringify(req.body, null, 2));
+  
+  try {
+    const { coachId, date, time, duration, field, purpose, notes } = req.body;
+    
+    console.log('📋 Extracted fields:', { coachId, date, time, duration, field, purpose, notes });
+    
+    if (!date || !time || !duration || !field || !purpose) {
+      console.log('❌ Missing required fields - sending 400');
+      return res.status(400).json({ 
+        error: 'Date, time, duration, field, and purpose are required',
+        received: { coachId, date, time, duration, field, purpose, notes }
+      });
+    }
+    
+    console.log('✅ All required fields present, proceeding with database insert');
+    
+    // Insert into field_bookings table
+    const insertFieldBookingQuery = `
+      INSERT INTO field_bookings (coach_id, date, time, duration, field, purpose, notes, status)
+      VALUES (?, ?, ?, ?, ?, ?, ?, 'pending')
+    `;
+    
+    const bookingValues = [
+      coachId || null,
+      date,
+      time,
+      duration,
+      field,
+      purpose,
+      notes || null
+    ];
+    
+    console.log('📝 Inserting with values:', bookingValues);
+    
+    db.query(insertFieldBookingQuery, bookingValues, (err, result) => {
+      if (err) {
+        console.error('❌ Database error:', err);
+        return res.status(500).json({ 
+          error: 'Database error: ' + err.message,
+          details: err
+        });
+      }
+      
+      console.log('✅ Successfully inserted, ID:', result.insertId);
+      
+      res.status(201).json({ 
+        message: 'Field booking created successfully',
+        bookingId: result.insertId,
+        booking: {
+          id: result.insertId,
+          coachId,
+          date,
+          time,
+          duration,
+          field,
+          purpose,
+          notes,
+          status: 'pending'
+        }
+      });
+    });
+  } catch (error) {
+    console.error('❌ Server error:', error);
+    res.status(500).json({ 
+      error: 'Internal server error: ' + error.message,
+      details: error
+    });
+  }
+});
+
+// Medical Records endpoints
+app.get('/api/medical-records', (req, res) => {
+  console.log('🩺 Getting all medical records');
+  const query = 'SELECT * FROM medical_records ORDER BY date DESC';
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error('❌ Error fetching medical records:', err);
+      return res.status(500).json({ error: 'Database error: ' + err.message });
+    }
+    console.log(`✅ Found ${results.length} medical records`);
+    res.json(results);
+  });
+});
+
+app.post('/api/medical-records', (req, res) => {
+  console.log('🔥 MEDICAL RECORD API CALLED - Received body:', JSON.stringify(req.body, null, 2));
+  
+  try {
+    const { playerId, date, type, description, doctor, status, followUpDate, restrictions, medications } = req.body;
+    
+    console.log('📋 Extracted fields:', { playerId, date, type, description, doctor, status, followUpDate, restrictions, medications });
+    
+    if (!date || !type || !description || !doctor) {
+      console.log('❌ Missing required fields - sending 400');
+      return res.status(400).json({ 
+        error: 'Date, type, description, and doctor are required',
+        received: { playerId, date, type, description, doctor, status, followUpDate, restrictions, medications }
+      });
+    }
+    
+    console.log('✅ All required fields present, proceeding with database insert');
+    
+    // Convert playerId to number if provided
+    let playerIdNum = null;
+    if (playerId) {
+      playerIdNum = parseInt(playerId);
+      if (isNaN(playerIdNum)) {
+        console.log('❌ Invalid player ID');
+        return res.status(400).json({ error: 'Player ID must be a valid number' });
+      }
+    }
+    
+    // Convert arrays to JSON strings for storage
+    const restrictionsStr = restrictions && Array.isArray(restrictions) ? JSON.stringify(restrictions) : null;
+    const medicationsStr = medications && Array.isArray(medications) ? JSON.stringify(medications) : null;
+    
+    // Insert into medical_records table
+    const insertMedicalRecordQuery = `
+      INSERT INTO medical_records (player_id, date, type, description, doctor, status, follow_up_date, restrictions, medications)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+    
+    const recordValues = [
+      playerIdNum,
+      date,
+      type,
+      description,
+      doctor,
+      status || 'active',
+      followUpDate || null,
+      restrictionsStr,
+      medicationsStr
+    ];
+    
+    console.log('📝 Inserting with values:', recordValues);
+    
+    db.query(insertMedicalRecordQuery, recordValues, (err, result) => {
+      if (err) {
+        console.error('❌ Database error:', err);
+        return res.status(500).json({ 
+          error: 'Database error: ' + err.message,
+          details: err
+        });
+      }
+      
+      console.log('✅ Successfully inserted, ID:', result.insertId);
+      
+      res.status(201).json({ 
+        message: 'Medical record created successfully',
+        recordId: result.insertId,
+        record: {
+          id: result.insertId,
+          playerId,
+          date,
+          type,
+          description,
+          doctor,
+          status: status || 'active',
+          followUpDate,
+          restrictions,
+          medications
+        }
+      });
+    });
+  } catch (error) {
+    console.error('❌ Server error:', error);
+    res.status(500).json({ 
+      error: 'Internal server error: ' + error.message,
+      details: error
+    });
+  }
+});
+
+app.put('/api/medical-records/:id', (req, res) => {
+  const recordId = req.params.id;
+  console.log('✏️ Updating medical record:', recordId, req.body);
+  
+  try {
+    const { status } = req.body;
+    
+    if (!status) {
+      return res.status(400).json({ error: 'Status is required for update' });
+    }
+    
+    // Update medical record status
+    const updateQuery = 'UPDATE medical_records SET status = ? WHERE id = ?';
+    
+    db.query(updateQuery, [status, recordId], (err, result) => {
+      if (err) {
+        console.error('❌ Error updating medical record:', err);
+        return res.status(500).json({ error: 'Error updating medical record: ' + err.message });
+      }
+      
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ error: 'Medical record not found' });
+      }
+      
+      console.log('✅ Medical record updated successfully');
+      res.json({
+        message: 'Medical record updated successfully',
+        recordId: recordId
+      });
+    });
+  } catch (error) {
+    console.error('❌ Medical record update error:', error);
+    res.status(500).json({ 
+      error: 'Internal server error: ' + error.message,
+      details: error
+    });
+  }
+});
+
+// Leagues endpoints
+app.get('/api/leagues', (req, res) => {
+  console.log('🏆 Getting all leagues');
+  const query = 'SELECT * FROM leagues ORDER BY name';
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error('❌ Error fetching leagues:', err);
+      return res.status(500).json({ error: 'Database error: ' + err.message });
+    }
+    console.log(`✅ Found ${results.length} leagues`);
+    res.json(results);
+  });
+});
+
+app.get('/api/leagues/:id', (req, res) => {
+  const { id } = req.params;
+  console.log('🏆 Getting league:', id);
+  const query = 'SELECT * FROM leagues WHERE id = ?';
+  db.query(query, [id], (err, results) => {
+    if (err) {
+      console.error('❌ Error fetching league:', err);
+      return res.status(500).json({ error: 'Database error: ' + err.message });
+    }
+    if (results.length === 0) {
+      return res.status(404).json({ error: 'League not found' });
+    }
+    res.json(results[0]);
+  });
+});
+
+app.post('/api/leagues', (req, res) => {
+  console.log('➕ Creating new league:', req.body);
+  
+  try {
+    const { name, description, status, totalTeams, totalMatches, currentSeason, champion, foundedYear } = req.body;
+    
+    if (!name) {
+      console.log('❌ Missing required fields');
+      return res.status(400).json({ 
+        error: 'League name is required',
+        received: { name, description, status, totalTeams, totalMatches, currentSeason, champion, foundedYear }
+      });
+    }
+    
+    console.log('✅ All required fields present');
+    
+    // Insert into leagues table
+    const insertLeagueQuery = `
+      INSERT INTO leagues (name, description, status, total_teams, total_matches, current_season, champion, founded_year)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+    
+    const leagueValues = [
+      name,
+      description || null,
+      status || 'active',
+      totalTeams || 0,
+      totalMatches || 0,
+      currentSeason || '2024-2025',
+      champion || null,
+      foundedYear || null
+    ];
+    
+    console.log('📝 Inserting into leagues table with values:', leagueValues);
+    
+    db.query(insertLeagueQuery, leagueValues, (err, result) => {
+      if (err) {
+        console.error('❌ Error inserting into leagues table:', err);
+        return res.status(500).json({ 
+          error: 'Error creating league: ' + err.message,
+          details: err
+        });
+      }
+      
+      console.log('✅ Successfully inserted into leagues table, ID:', result.insertId);
+      
+      res.status(201).json({ 
+        message: 'League created successfully',
+        leagueId: result.insertId,
+        league: {
+          id: result.insertId,
+          name,
+          description,
+          status: status || 'active',
+          totalTeams: totalTeams || 0,
+          totalMatches: totalMatches || 0,
+          currentSeason: currentSeason || '2024-2025',
+          champion,
+          foundedYear
+        }
+      });
+    });
+  } catch (error) {
+    console.error('❌ League creation error:', error);
+    res.status(500).json({ 
+      error: 'Internal server error: ' + error.message,
+      details: error
+    });
+  }
+});
+
+app.put('/api/leagues/:id', (req, res) => {
+  const leagueId = req.params.id;
+  console.log('✏️ Updating league:', leagueId, req.body);
+  
+  try {
+    const { name, description, status, totalTeams, totalMatches, currentSeason, champion, foundedYear } = req.body;
+    
+    // Update leagues table
+    const updateLeagueQuery = `
+      UPDATE leagues
+      SET name = ?, description = ?, status = ?, total_teams = ?, total_matches = ?, current_season = ?, champion = ?, founded_year = ?
+      WHERE id = ?
+    `;
+    
+    const leagueValues = [
+      name,
+      description || null,
+      status,
+      totalTeams,
+      totalMatches,
+      currentSeason,
+      champion || null,
+      foundedYear || null,
+      leagueId
+    ];
+    
+    console.log('📝 Updating leagues table with values:', leagueValues);
+    
+    db.query(updateLeagueQuery, leagueValues, (err, result) => {
+      if (err) {
+        console.error('❌ Error updating leagues table:', err);
+        return res.status(500).json({ error: 'Error updating league: ' + err.message });
+      }
+      
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ error: 'League not found' });
+      }
+      
+      console.log('✅ League updated successfully');
+      res.json({
+        message: 'League updated successfully',
+        leagueId: leagueId
+      });
+    });
+  } catch (error) {
+    console.error('❌ League update error:', error);
+    res.status(500).json({ 
+      error: 'Internal server error: ' + error.message,
+      details: error
+    });
+  }
+});
+
+app.delete('/api/leagues/:id', (req, res) => {
+  const leagueId = req.params.id;
+  console.log('🗑️ Deleting league:', leagueId);
+  
+  // Delete from leagues table
+  const deleteLeagueQuery = 'DELETE FROM leagues WHERE id = ?';
+  db.query(deleteLeagueQuery, [leagueId], (err, result) => {
+    if (err) {
+      console.error('❌ Error deleting from leagues table:', err);
+      return res.status(500).json({ error: 'Error deleting league: ' + err.message });
+    }
+    
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'League not found' });
+    }
+    
+    console.log('✅ League deleted successfully');
+    res.json({
+      message: 'League deleted successfully',
+      leagueId: leagueId
+    });
+  });
+});
+
+// Venues endpoints
+app.get('/api/venues', (req, res) => {
+  console.log('🏟️ Getting all venues');
+  const query = 'SELECT * FROM venues ORDER BY name';
+  db.query(query, (err, results) => {
+    if (err) {
+      console.error('❌ Error fetching venues:', err);
+      return res.status(500).json({ error: 'Database error: ' + err.message });
+    }
+    
+    // Parse JSON fields
+    results.forEach(venue => {
+      try {
+        if (venue.facilities) venue.facilities = JSON.parse(venue.facilities);
+      } catch (e) { venue.facilities = []; }
+      try {
+        if (venue.fields) venue.fields = JSON.parse(venue.fields);
+      } catch (e) { venue.fields = []; }
+    });
+    
+    console.log(`✅ Found ${results.length} venues`);
+    res.json(results);
+  });
+});
+
+app.get('/api/venues/:id', (req, res) => {
+  const { id } = req.params;
+  console.log('🏟️ Getting venue:', id);
+  const query = 'SELECT * FROM venues WHERE id = ?';
+  db.query(query, [id], (err, results) => {
+    if (err) {
+      console.error('❌ Error fetching venue:', err);
+      return res.status(500).json({ error: 'Database error: ' + err.message });
+    }
+    if (results.length === 0) {
+      return res.status(404).json({ error: 'Venue not found' });
+    }
+    
+    // Parse JSON fields
+    const venue = results[0];
+    try {
+      if (venue.facilities) venue.facilities = JSON.parse(venue.facilities);
+    } catch (e) { venue.facilities = []; }
+    try {
+      if (venue.fields) venue.fields = JSON.parse(venue.fields);
+    } catch (e) { venue.fields = []; }
+    
+    res.json(venue);
+  });
+});
+
+app.post('/api/venues', (req, res) => {
+  console.log('➕ Creating new venue:', req.body);
+  
+  try {
+    const { name, address, capacity, type, surface, status, facilities, manager, managerPhone, managerEmail, fields } = req.body;
+    
+    if (!name || !address || !capacity || !type) {
+      console.log('❌ Missing required fields');
+      return res.status(400).json({ 
+        error: 'Name, address, capacity, and type are required',
+        received: { name, address, capacity, type, surface, status, facilities, manager, managerPhone, managerEmail, fields }
+      });
+    }
+    
+    console.log('✅ All required fields present');
+    
+    // Convert arrays to JSON strings for storage
+    const facilitiesStr = facilities && Array.isArray(facilities) ? JSON.stringify(facilities) : null;
+    const fieldsStr = fields && Array.isArray(fields) ? JSON.stringify(fields) : null;
+    
+    // Insert into venues table
+    const insertVenueQuery = `
+      INSERT INTO venues (name, address, capacity, type, surface, status, facilities, manager, manager_phone, manager_email, fields, last_maintenance, next_maintenance)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+    
+    const venueValues = [
+      name,
+      address,
+      capacity,
+      type,
+      surface || 'Natural Grass',
+      status || 'Active',
+      facilitiesStr,
+      manager || null,
+      managerPhone || null,
+      managerEmail || null,
+      fieldsStr,
+      new Date().toISOString().split('T')[0], // last_maintenance
+      new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] // next_maintenance
+    ];
+    
+    console.log('📝 Inserting into venues table with values:', venueValues);
+    
+    db.query(insertVenueQuery, venueValues, (err, result) => {
+      if (err) {
+        console.error('❌ Error inserting into venues table:', err);
+        return res.status(500).json({ 
+          error: 'Error creating venue: ' + err.message,
+          details: err
+        });
+      }
+      
+      console.log('✅ Successfully inserted into venues table, ID:', result.insertId);
+      
+      res.status(201).json({ 
+        message: 'Venue created successfully',
+        venueId: result.insertId,
+        venue: {
+          id: result.insertId,
+          name,
+          address,
+          capacity,
+          type,
+          surface: surface || 'Natural Grass',
+          status: status || 'Active',
+          facilities,
+          manager,
+          managerPhone,
+          managerEmail,
+          fields,
+          bookings: 0,
+          lastMaintenance: new Date().toISOString().split('T')[0],
+          nextMaintenance: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+        }
+      });
+    });
+  } catch (error) {
+    console.error('❌ Venue creation error:', error);
+    res.status(500).json({ 
+      error: 'Internal server error: ' + error.message,
+      details: error
+    });
+  }
+});
+
+app.put('/api/venues/:id', (req, res) => {
+  const venueId = req.params.id;
+  console.log('✏️ Updating venue:', venueId, req.body);
+  
+  try {
+    const { name, address, capacity, type, surface, status, facilities, manager, managerPhone, managerEmail, fields } = req.body;
+    
+    // Convert arrays to JSON strings for storage
+    const facilitiesStr = facilities && Array.isArray(facilities) ? JSON.stringify(facilities) : null;
+    const fieldsStr = fields && Array.isArray(fields) ? JSON.stringify(fields) : null;
+    
+    // Update venues table
+    const updateVenueQuery = `
+      UPDATE venues
+      SET name = ?, address = ?, capacity = ?, type = ?, surface = ?, status = ?, facilities = ?, manager = ?, manager_phone = ?, manager_email = ?, fields = ?
+      WHERE id = ?
+    `;
+    
+    const venueValues = [
+      name,
+      address,
+      capacity,
+      type,
+      surface,
+      status,
+      facilitiesStr,
+      manager || null,
+      managerPhone || null,
+      managerEmail || null,
+      fieldsStr,
+      venueId
+    ];
+    
+    console.log('📝 Updating venues table with values:', venueValues);
+    
+    db.query(updateVenueQuery, venueValues, (err, result) => {
+      if (err) {
+        console.error('❌ Error updating venues table:', err);
+        return res.status(500).json({ error: 'Error updating venue: ' + err.message });
+      }
+      
+      if (result.affectedRows === 0) {
+        return res.status(404).json({ error: 'Venue not found' });
+      }
+      
+      console.log('✅ Venue updated successfully');
+      res.json({
+        message: 'Venue updated successfully',
+        venueId: venueId
+      });
+    });
+  } catch (error) {
+    console.error('❌ Venue update error:', error);
+    res.status(500).json({ 
+      error: 'Internal server error: ' + error.message,
+      details: error
+    });
+  }
+});
+
+app.delete('/api/venues/:id', (req, res) => {
+  const venueId = req.params.id;
+  console.log('🗑️ Deleting venue:', venueId);
+  
+  // Delete from venues table
+  const deleteVenueQuery = 'DELETE FROM venues WHERE id = ?';
+  db.query(deleteVenueQuery, [venueId], (err, result) => {
+    if (err) {
+      console.error('❌ Error deleting from venues table:', err);
+      return res.status(500).json({ error: 'Error deleting venue: ' + err.message });
+    }
+    
+    if (result.affectedRows === 0) {
+      return res.status(404).json({ error: 'Venue not found' });
+    }
+    
+    console.log('✅ Venue deleted successfully');
+    res.json({
+      message: 'Venue deleted successfully',
+      venueId: venueId
+    });
+  });
+});
+
 // Start server
 app.listen(PORT, () => {
   console.log(`🚀 Backend server running on port ${PORT}`);
@@ -802,6 +1578,10 @@ app.listen(PORT, () => {
   console.log(`🏃 Players endpoint: http://localhost:${PORT}/api/players`);
   console.log(`⚽ Teams endpoint: http://localhost:${PORT}/api/teams`);
   console.log(`📅 Fixtures endpoint: http://localhost:${PORT}/api/fixtures`);
+  console.log(`🏟️ Field bookings endpoint: http://localhost:${PORT}/api/field-bookings`);
+  console.log(`🩺 Medical records endpoint: http://localhost:${PORT}/api/medical-records`);
+  console.log(`🏆 Leagues endpoint: http://localhost:${PORT}/api/leagues`);
+  console.log(`🏟️ Venues endpoint: http://localhost:${PORT}/api/venues`);
 });
 
 module.exports = app;

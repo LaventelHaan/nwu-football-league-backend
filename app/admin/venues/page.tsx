@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -13,138 +13,17 @@ import { Switch } from "@/components/ui/switch"
 import { MapPin, Search, Plus, Edit, Trash2, Users, Calendar, Phone, Mail, AlertCircle } from "lucide-react"
 import Link from "next/link"
 
-// Mock venue data
-const mockVenues = [
-  {
-    id: 1,
-    name: "Main Stadium",
-    address: "University Campus, Potchefstroom",
-    capacity: 15000,
-    type: "Stadium",
-    surface: "Natural Grass",
-    status: "Active",
-    facilities: ["Floodlights", "Changing Rooms", "Medical Room", "VIP Lounge", "Parking"],
-    contact: {
-      manager: "John Smith",
-      phone: "+27 18 299 1234",
-      email: "stadium@nwu.ac.za",
-    },
-    fields: [
-      {
-        id: 1,
-        name: "Main Pitch",
-        dimensions: "105m x 68m",
-        surface: "Natural Grass",
-        status: "Active",
-      },
-    ],
-    bookings: 45,
-    lastMaintenance: "2024-02-15",
-    nextMaintenance: "2024-04-15",
-  },
-  {
-    id: 2,
-    name: "Sports Complex A",
-    address: "Sports Village, NWU Campus",
-    capacity: 5000,
-    type: "Multi-purpose",
-    surface: "Artificial Turf",
-    status: "Active",
-    facilities: ["Floodlights", "Changing Rooms", "Scoreboard", "Parking"],
-    contact: {
-      manager: "Sarah Johnson",
-      phone: "+27 18 299 5678",
-      email: "complexa@nwu.ac.za",
-    },
-    fields: [
-      {
-        id: 2,
-        name: "Field A1",
-        dimensions: "100m x 64m",
-        surface: "Artificial Turf",
-        status: "Active",
-      },
-      {
-        id: 3,
-        name: "Field A2",
-        dimensions: "100m x 64m",
-        surface: "Artificial Turf",
-        status: "Active",
-      },
-    ],
-    bookings: 32,
-    lastMaintenance: "2024-03-01",
-    nextMaintenance: "2024-05-01",
-  },
-  {
-    id: 3,
-    name: "Sports Complex B",
-    address: "Recreation Center, NWU Campus",
-    capacity: 3000,
-    type: "Training Ground",
-    surface: "Natural Grass",
-    status: "Maintenance",
-    facilities: ["Changing Rooms", "Equipment Storage"],
-    contact: {
-      manager: "Mike Williams",
-      phone: "+27 18 299 9012",
-      email: "complexb@nwu.ac.za",
-    },
-    fields: [
-      {
-        id: 4,
-        name: "Training Pitch 1",
-        dimensions: "90m x 60m",
-        surface: "Natural Grass",
-        status: "Maintenance",
-      },
-      {
-        id: 5,
-        name: "Training Pitch 2",
-        dimensions: "90m x 60m",
-        surface: "Natural Grass",
-        status: "Active",
-      },
-    ],
-    bookings: 18,
-    lastMaintenance: "2024-03-10",
-    nextMaintenance: "2024-03-25",
-  },
-  {
-    id: 4,
-    name: "University Stadium",
-    address: "Main Campus, Potchefstroom",
-    capacity: 8000,
-    type: "Stadium",
-    surface: "Hybrid Grass",
-    status: "Active",
-    facilities: ["Floodlights", "Changing Rooms", "Press Box", "Concessions", "Parking"],
-    contact: {
-      manager: "Emma Davis",
-      phone: "+27 18 299 3456",
-      email: "unistadium@nwu.ac.za",
-    },
-    fields: [
-      {
-        id: 6,
-        name: "Championship Pitch",
-        dimensions: "105m x 68m",
-        surface: "Hybrid Grass",
-        status: "Active",
-      },
-    ],
-    bookings: 28,
-    lastMaintenance: "2024-01-20",
-    nextMaintenance: "2024-04-20",
-  },
-]
+// Mock venue data - REMOVED, using API instead
+// const mockVenues = [ ... ]
 
 const venueTypes = ["Stadium", "Multi-purpose", "Training Ground", "Indoor Arena"]
 const surfaceTypes = ["Natural Grass", "Artificial Turf", "Hybrid Grass", "Indoor Court"]
 const statusOptions = ["Active", "Maintenance", "Inactive"]
 
 export default function VenueManagement() {
-  const [venues, setVenues] = useState(mockVenues)
+  const [venues, setVenues] = useState([])
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState('')
   const [searchTerm, setSearchTerm] = useState("")
   const [typeFilter, setTypeFilter] = useState("ALL")
   const [statusFilter, setStatusFilter] = useState("ALL")
@@ -168,6 +47,23 @@ export default function VenueManagement() {
     },
   })
 
+  const fetchVenues = async () => {
+    try {
+      const response = await fetch('http://localhost:3002/api/venues')
+      if (!response.ok) throw new Error('Failed to fetch venues')
+      const data = await response.json()
+      setVenues(data)
+    } catch (err) {
+      setError((err as Error).message)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchVenues()
+  }, [])
+
   const filteredVenues = venues.filter((venue) => {
     const matchesSearch =
       venue.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -184,47 +80,97 @@ export default function VenueManagement() {
   }
 
   const handleEditVenue = (venue: any) => {
-    setEditingVenue({ ...venue })
+    setEditingVenue({ 
+      ...venue, 
+      contact: {
+        manager: venue.manager || '',
+        phone: venue.manager_phone || '',
+        email: venue.manager_email || ''
+      }
+    })
     setIsEditDialogOpen(true)
   }
 
-  const handleUpdateVenue = () => {
-    setVenues(venues.map((venue) => (venue.id === editingVenue.id ? editingVenue : venue)))
-    setIsEditDialogOpen(false)
-    setEditingVenue(null)
-  }
-
-  const handleCreateVenue = () => {
-    const venue = {
-      id: venues.length + 1,
-      ...newVenue,
-      capacity: Number.parseInt(newVenue.capacity),
-      fields: [],
-      bookings: 0,
-      lastMaintenance: new Date().toISOString().split("T")[0],
-      nextMaintenance: new Date(Date.now() + 60 * 24 * 60 * 60 * 1000).toISOString().split("T")[0],
+  const handleUpdateVenue = async () => {
+    try {
+      const response = await fetch(`http://localhost:3002/api/venues/${editingVenue.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: editingVenue.name,
+          address: editingVenue.address,
+          capacity: editingVenue.capacity,
+          type: editingVenue.type,
+          surface: editingVenue.surface,
+          status: editingVenue.status,
+          facilities: editingVenue.facilities,
+          manager: editingVenue.contact?.manager || editingVenue.manager,
+          managerPhone: editingVenue.contact?.phone || editingVenue.manager_phone,
+          managerEmail: editingVenue.contact?.email || editingVenue.manager_email,
+          fields: editingVenue.fields
+        })
+      })
+      if (!response.ok) throw new Error('Failed to update venue')
+      await fetchVenues() // refresh data
+      setIsEditDialogOpen(false)
+      setEditingVenue(null)
+    } catch (err) {
+      alert((err as Error).message)
     }
-    setVenues([...venues, venue])
-    setIsCreateDialogOpen(false)
-    setNewVenue({
-      name: "",
-      address: "",
-      capacity: "",
-      type: "",
-      surface: "",
-      status: "Active",
-      facilities: [],
-      contact: {
-        manager: "",
-        phone: "",
-        email: "",
-      },
-    })
   }
 
-  const handleDeleteVenue = (venueId: number) => {
-    if (confirm("Are you sure you want to delete this venue?")) {
+  const handleCreateVenue = async () => {
+    try {
+      const response = await fetch('http://localhost:3002/api/venues', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: newVenue.name,
+          address: newVenue.address,
+          capacity: newVenue.capacity,
+          type: newVenue.type,
+          surface: newVenue.surface,
+          status: newVenue.status,
+          facilities: newVenue.facilities,
+          manager: newVenue.contact.manager,
+          managerPhone: newVenue.contact.phone,
+          managerEmail: newVenue.contact.email,
+          fields: [] // default empty
+        })
+      })
+      if (!response.ok) throw new Error('Failed to create venue')
+      const data = await response.json()
+      setVenues([...venues, data.venue])
+      setIsCreateDialogOpen(false)
+      setNewVenue({
+        name: "",
+        address: "",
+        capacity: "",
+        type: "",
+        surface: "",
+        status: "Active",
+        facilities: [],
+        contact: {
+          manager: "",
+          phone: "",
+          email: "",
+        },
+      })
+    } catch (err) {
+      alert((err as Error).message)
+    }
+  }
+
+  const handleDeleteVenue = async (venueId: number) => {
+    if (!confirm("Are you sure you want to delete this venue?")) return
+    try {
+      const response = await fetch(`http://localhost:3002/api/venues/${venueId}`, {
+        method: 'DELETE'
+      })
+      if (!response.ok) throw new Error('Failed to delete venue')
       setVenues(venues.filter((venue) => venue.id !== venueId))
+    } catch (err) {
+      alert((err as Error).message)
     }
   }
 
@@ -348,7 +294,10 @@ export default function VenueManagement() {
         </Card>
 
         {/* Venues Grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {loading && <div className="text-center py-8">Loading venues...</div>}
+        {error && <div className="text-center py-8 text-red-600">Error: {error}</div>}
+        {!loading && !error && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {filteredVenues.map((venue) => (
             <Card key={venue.id} className="bg-card/50 backdrop-blur-sm hover:shadow-lg transition-all duration-300">
               <CardHeader>
@@ -452,8 +401,9 @@ export default function VenueManagement() {
             </Card>
           ))}
         </div>
+        )}
 
-        {filteredVenues.length === 0 && (
+        {filteredVenues.length === 0 && !loading && !error && (
           <Card className="bg-card/50 backdrop-blur-sm">
             <CardContent className="text-center py-12">
               <MapPin className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
@@ -506,15 +456,15 @@ export default function VenueManagement() {
                 <div className="grid grid-cols-2 gap-4 mt-2">
                   <div className="flex items-center text-sm text-muted-foreground">
                     <Users className="w-4 h-4 mr-2" />
-                    Manager: {selectedVenue.contact.manager}
+                    Manager: {selectedVenue.manager}
                   </div>
                   <div className="flex items-center text-sm text-muted-foreground">
                     <Phone className="w-4 h-4 mr-2" />
-                    {selectedVenue.contact.phone}
+                    {selectedVenue.manager_phone}
                   </div>
                   <div className="flex items-center text-sm text-muted-foreground col-span-2">
                     <Mail className="w-4 h-4 mr-2" />
-                    {selectedVenue.contact.email}
+                    {selectedVenue.manager_email}
                   </div>
                 </div>
               </div>

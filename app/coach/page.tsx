@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useAuth } from "@/hooks/use-auth"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Sidebar } from "@/app/coach/layout/layout"
@@ -13,7 +13,7 @@ import { AnnouncementsList } from "@/app/coach/announcement/announcements-list"
 import { UpcomingMatches } from "@/app/coach/matches/upcoming-matches"
 import { TeamStatsComponent } from "@/app/coach/team/team-stats"
 import { LeagueStandings } from "@/app/coach/league/league-standings"
-import  FieldBookingComponent  from "@/app/coach/field-booking/page"
+import  FieldBookingComponent  from "@/components/ui/field-booking"
 import { PlayerRequests } from "@/app/coach/requests/player-requests"
 import  MatchesOverview from "@/app/coach/matches/matches-overview"
 import { MedicalRecords } from "@/app/coach/medical/medical-records"
@@ -38,20 +38,20 @@ export default function CoachDashboard() {
   const [fieldBookings, setFieldBookings] = useState(mockFieldBookings)
   const [playerRequests, setPlayerRequests] = useState(mockPlayerRequests)
   const [medicalRecords, setMedicalRecords] = useState(mockMedicalRecords)
-  const [recentMatches, setRecentMatches] = useState(mockRecentMatches)
+  const [currentUser, setCurrentUser] = useState<any>(null)
 
-
-
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="w-8 h-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Loading...</p>
-        </div>
-      </div>
-    )
-  }
+  // Load current user
+  useEffect(() => {
+    try {
+      const userData = localStorage.getItem("currentUser")
+      if (userData) {
+        const user = JSON.parse(userData)
+        setCurrentUser(user)
+      }
+    } catch (error) {
+      console.error("Error loading user:", error)
+    }
+  }, [])
 
 
   
@@ -107,12 +107,52 @@ export default function CoachDashboard() {
   }
 
   // Handlers for new features
-  const handleCreateBooking = (bookingData: Omit<FieldBooking, "id">) => {
+  const handleCreateBooking = async (bookingData: Omit<FieldBooking, "id">) => {
+    // First update local state for immediate UI feedback
     const newBooking: FieldBooking = {
       ...bookingData,
-      id: Date.now().toString(),
+      id: Date.now(),
     }
     setFieldBookings([...fieldBookings, newBooking])
+
+    // Then save to database
+    try {
+      console.log('Sending field booking to API:', {
+        coachId: currentUser?.id || '1',
+        date: bookingData.date,
+        time: bookingData.time,
+        duration: bookingData.duration,
+        field: bookingData.field,
+        purpose: bookingData.purpose,
+        notes: bookingData.notes,
+      });
+      const response = await fetch('http://localhost:3002/api/field-bookings', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          coachId: '2', // Use a valid coach ID that exists in users table
+          date: bookingData.date,
+          time: bookingData.time,
+          duration: bookingData.duration,
+          field: bookingData.field,
+          purpose: bookingData.purpose,
+          notes: bookingData.notes,
+        }),
+      });
+
+      console.log('Field booking API response status:', response.status);
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Field booking API error:', errorText);
+      } else {
+        const responseData = await response.json();
+        console.log('Field booking saved successfully:', responseData);
+      }
+    } catch (error) {
+      console.error('Error saving field booking:', error);
+    }
   }
 
   const handleUpdateRequest = (id: string, status: PlayerRequest["status"], notes?: string) => {
@@ -121,16 +161,61 @@ export default function CoachDashboard() {
     )
   }
 
-  const handleCreateMedicalRecord = (recordData: Omit<MedicalRecord, "id">) => {
+  const handleCreateMedicalRecord = async (recordData: Omit<MedicalRecord, "id">) => {
+    // First update local state for immediate UI feedback
     const newRecord: MedicalRecord = {
       ...recordData,
-      id: Date.now().toString(),
+      id: Date.now(),
     }
     setMedicalRecords([...medicalRecords, newRecord])
+
+    // Then save to database
+    try {
+      console.log('Sending medical record to API:', recordData);
+      const response = await fetch('http://localhost:3002/api/medical-records', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...recordData,
+          playerId: recordData.playerId.toString() // Ensure it's a string for the API
+        }),
+      });
+
+      console.log('Medical record API response status:', response.status);
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Medical record API error:', errorText);
+      } else {
+        const responseData = await response.json();
+        console.log('Medical record saved successfully:', responseData);
+      }
+    } catch (error) {
+      console.error('Error saving medical record:', error);
+    }
   }
 
-  const handleUpdateMedicalRecord = (updatedRecord: MedicalRecord) => {
+  const handleUpdateMedicalRecord = async (updatedRecord: MedicalRecord) => {
+    // First update local state for immediate UI feedback
     setMedicalRecords(medicalRecords.map((record) => (record.id === updatedRecord.id ? updatedRecord : record)))
+
+    // Then save to database
+    try {
+      const response = await fetch(`http://localhost:3002/api/medical-records/${updatedRecord.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ status: updatedRecord.status }),
+      });
+
+      if (!response.ok) {
+        console.error('Failed to update medical record in database');
+      }
+    } catch (error) {
+      console.error('Error updating medical record:', error);
+    }
   }
   // Render main content based on active tab
   const renderContent = () => {
