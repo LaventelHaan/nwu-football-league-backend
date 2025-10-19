@@ -1,5 +1,6 @@
 "use client"
 
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -8,234 +9,6 @@ import { Progress } from "@/components/ui/progress"
 import { ArrowLeft, Trophy, Calendar, MapPin, Award, TrendingUp } from "lucide-react"
 import Link from "next/link"
 import { useParams } from "next/navigation"
-
-// Mock detailed player data
-const getPlayerById = (id: string) => {
-  // src/data/players.ts
-const players = {
-  "1": {
-    id: 1,
-    name: "John Doe",
-    team: "NWU Eagles",
-    position: "Forward",
-    age: 22,
-    nationality: "South Africa",
-    height: "1.85m",
-    weight: "78kg",
-    goals: 18,
-    assists: 7,
-    appearances: 17,
-    yellowCards: 2,
-    redCards: 0,
-    avatar: "/football-player-portrait.png",
-    joinDate: "2023-08-15",
-    previousTeam: "Youth Academy",
-    biography:
-      "John is a prolific striker who joined NWU Eagles from the youth academy. Known for his clinical finishing and pace, he has quickly become a fan favorite.",
-    achievements: ["Top Scorer 2024", "Player of the Month - December"],
-    seasonStats: {
-      matchesPlayed: 17,
-      minutesPlayed: 1420,
-      goalsPerGame: 1.06,
-      shotsOnTarget: 34,
-      passAccuracy: 78,
-      dribblesCompleted: 23,
-    },
-    recentForm: ["Goal", "Goal", "Assist", "Goal", "Yellow Card"],
-  },
-
-  "2": {
-    id: 2,
-    name: "Mike Smith",
-    team: "Wits Wolves",
-    position: "Midfielder",
-    age: 21,
-    nationality: "South Africa",
-    height: "1.80m",
-    weight: "74kg",
-    goals: 15,
-    assists: 12,
-    appearances: 18,
-    yellowCards: 4,
-    redCards: 1,
-    avatar: "/football-midfielder-portrait.png",
-    joinDate: "2023-07-20",
-    previousTeam: "Local Club FC",
-    biography:
-      "Mike is a dynamic midfielder with great vision and creativity. He thrives in tight spaces and is known for his ability to unlock defenses.",
-    achievements: ["Best Young Player 2023", "Team Player Award"],
-    seasonStats: {
-      matchesPlayed: 18,
-      minutesPlayed: 1500,
-      goalsPerGame: 0.83,
-      shotsOnTarget: 28,
-      passAccuracy: 82,
-      dribblesCompleted: 35,
-    },
-    recentForm: ["Assist", "Goal", "Assist", "Red Card", "Goal"],
-  },
-
-  "3": {
-    id: 3,
-    name: "David Johnson",
-    team: "UCT Lions",
-    position: "Forward",
-    age: 23,
-    nationality: "Nigeria",
-    height: "1.83m",
-    weight: "79kg",
-    goals: 12,
-    assists: 5,
-    appearances: 16,
-    yellowCards: 1,
-    redCards: 0,
-    avatar: "/football-striker-portrait.png",
-    joinDate: "2023-09-01",
-    previousTeam: "Lagos United",
-    biography:
-      "David is a Nigerian forward known for his pace and strength. He is a constant threat behind defensive lines and delivers clinical finishes.",
-    achievements: ["Top African Prospect 2023"],
-    seasonStats: {
-      matchesPlayed: 16,
-      minutesPlayed: 1350,
-      goalsPerGame: 0.75,
-      shotsOnTarget: 30,
-      passAccuracy: 74,
-      dribblesCompleted: 28,
-    },
-    recentForm: ["Goal", "Goal", "Assist", "Goal", "Goal"],
-  },
-
-  "4": {
-    id: 4,
-    name: "Alex Wilson",
-    team: "UP Tuks",
-    position: "Defender",
-    age: 24,
-    nationality: "South Africa",
-    height: "1.87m",
-    weight: "82kg",
-    goals: 3,
-    assists: 8,
-    appearances: 18,
-    yellowCards: 6,
-    redCards: 0,
-    avatar: "/football-defender-portrait.png",
-    joinDate: "2023-06-10",
-    previousTeam: "Pretoria FC",
-    biography:
-      "Alex is a solid defender with excellent tackling and positioning. His aerial ability also makes him a danger during set pieces.",
-    achievements: ["Best Defender 2023"],
-    seasonStats: {
-      matchesPlayed: 18,
-      minutesPlayed: 1620,
-      goalsPerGame: 0.16,
-      shotsOnTarget: 8,
-      passAccuracy: 80,
-      dribblesCompleted: 12,
-    },
-    recentForm: ["Clean Sheet", "Assist", "Yellow Card", "Clean Sheet", "Assist"],
-  },
-
-  "5": {
-    id: 5,
-    name: "Peter Brown",
-    team: "UJ Orange",
-    position: "Goalkeeper",
-    age: 25,
-    nationality: "Zimbabwe",
-    height: "1.90m",
-    weight: "85kg",
-    goals: 0,
-    assists: 1,
-    appearances: 18,
-    yellowCards: 1,
-    redCards: 0,
-    cleanSheets: 8,
-    saves: 67,
-    avatar: "/football-goalkeeper-portrait.png",
-    joinDate: "2023-08-01",
-    previousTeam: "Harare City",
-    biography:
-      "Peter is a commanding goalkeeper from Zimbabwe. He is known for his quick reflexes, excellent shot-stopping, and leadership from the back.",
-    achievements: ["Golden Glove 2024"],
-    seasonStats: {
-      matchesPlayed: 18,
-      minutesPlayed: 1620,
-      goalsPerGame: 0,
-      shotsOnTarget: 0,
-      passAccuracy: 70,
-      dribblesCompleted: 0,
-    },
-    recentForm: ["Clean Sheet", "Save", "Save", "Clean Sheet", "Yellow Card"],
-  },
-
-  "6": {
-    id: 6,
-    name: "Kevin Davis",
-    team: "Stellenbosch FC",
-    position: "Midfielder",
-    age: 20,
-    nationality: "South Africa",
-    height: "1.75m",
-    weight: "70kg",
-    goals: 8,
-    assists: 15,
-    appearances: 17,
-    yellowCards: 3,
-    redCards: 0,
-    avatar: "/football-young-midfielder-portrait.png",
-    joinDate: "2023-07-15",
-    previousTeam: "Cape Town Youth",
-    biography:
-      "Kevin is a young and energetic midfielder with superb dribbling skills. He excels in carrying the ball forward and linking play.",
-    achievements: ["Rookie of the Year 2023"],
-    seasonStats: {
-      matchesPlayed: 17,
-      minutesPlayed: 1400,
-      goalsPerGame: 0.47,
-      shotsOnTarget: 18,
-      passAccuracy: 84,
-      dribblesCompleted: 42,
-    },
-    recentForm: ["Assist", "Goal", "Assist", "Assist", "Yellow Card"],
-  },
-
-  "7": {
-    id: 7,
-    name: "Forget Nukeri",
-    team: "Stellenbosch FC",
-    position: "Forward",
-    age: 23,
-    nationality: "South Africa",
-    height: "1.82m",
-    weight: "77kg",
-    goals: 3,
-    assists: 8,
-    appearances: 18,
-    yellowCards: 6,
-    redCards: 0,
-    avatar: "/forgetnukeriID.jpg",
-    joinDate: "2023-06-10",
-    previousTeam: "Pretoria FC",
-    biography:
-      "Forget is a versatile forward who can play across the front line. Known for his agility and pressing, he contributes both goals and assists.",
-    achievements: ["Fan Favorite 2023"],
-    seasonStats: {
-      matchesPlayed: 18,
-      minutesPlayed: 1500,
-      goalsPerGame: 0.16,
-      shotsOnTarget: 15,
-      passAccuracy: 75,
-      dribblesCompleted: 27,
-    },
-    recentForm: ["Assist", "Yellow Card", "Assist", "Goal", "Assist"],
-  },
-} as const;
-
-
-  return players[id as keyof typeof players] || null
-}
 
 const getPositionColor = (position: string) => {
   switch (position.toLowerCase()) {
@@ -253,8 +26,39 @@ const getPositionColor = (position: string) => {
 }
 
 export default function PlayerProfilePage() {
-  const params = useParams()
-  const player = getPlayerById(params.id as string)
+  const params = useParams();
+  const player_id = params?.id as string;
+  const [player, setPlayer] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  
+  useEffect(() => {
+    const fetchPlayer = async () => {
+      try {
+        const response = await fetch(`http://localhost:3002/api/players/${player_id}`);
+        if (!response.ok) {
+          throw new Error('Failed to fetch player');
+        }
+        const data = await response.json();
+        setPlayer(data);
+      } catch (err: any) {
+        setError(err.message);
+        console.error('Error fetching player:', err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (player_id) {
+      fetchPlayer();
+    }
+  }, [player_id]);
+  
+  if (loading) 
+	  return <p>Loading...</p>;
+  if (error) 
+	  return <p>Error: {error}</p>;
 
   if (!player) {
     return (
@@ -310,7 +114,7 @@ export default function PlayerProfilePage() {
                 <CardTitle className="text-2xl">{player.name}</CardTitle>
                 <div className="flex justify-center space-x-2 mt-2">
                   <Badge className={getPositionColor(player.position)}>{player.position}</Badge>
-                  <Badge variant="outline">#{player.id}</Badge>
+                  <Badge variant="outline">#{player.player_id}</Badge>
                 </div>
               </CardHeader>
               <CardContent className="space-y-4">
