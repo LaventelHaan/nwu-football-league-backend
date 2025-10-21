@@ -39,12 +39,10 @@ export default function MatchPage() {
 
     const fetchMatch = async () => {
       try {
-        console.log("Match id:", matchId)
         const res = await fetch(`http://localhost:3001/api/player/matches/${matchId}`)
         if (!res.ok) throw new Error("Failed to fetch match details")
         const data = await res.json()
         setMatch(data)
-        console.log("Match data:", data)
       } catch (err) {
         console.error("Match fetch error:", err)
       } finally {
