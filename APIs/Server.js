@@ -5,6 +5,7 @@ require('dotenv').config();
 const matchStatsRoutes = require('./Match Stats Routes/RoutesMatchStats');
 const teamRoutes = require('./Team Routes/RoutesTeam');
 const fixtureRoutes = require('./Fixture Routes/RoutesFixture');
+const announcementsRoutes = require('./Announcements Routes/announcements'); 
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -14,10 +15,21 @@ app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
+// Simple authentication mock (add this middleware)
+app.use((req, res, next) => {
+  // For testing, you can pass user_id in headers
+  // In production, use JWT or session-based auth
+  req.user = {
+    user_id: req.headers['user-id'] || 1 // Default to user_id 1 for testing
+  };
+  next();
+});
+
 // Routes
 app.use('/api', matchStatsRoutes);
 app.use('/api', teamRoutes);
 app.use('/api', fixtureRoutes);
+app.use('/api/announcements', announcementsRoutes);
 
 // Health check endpoint
 app.get('/health', (req, res) => {
