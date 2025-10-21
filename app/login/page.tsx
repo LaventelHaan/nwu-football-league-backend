@@ -11,9 +11,6 @@ import { ArrowLeft, Eye, EyeOff, Mail, Lock } from "lucide-react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 
-import type { User } from "@/lib/mockData"
-import { users,mockPlayers } from "@/lib/mockData" // import the users array
-
 export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
@@ -25,51 +22,82 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsLoading(true)
-    setError("")
- // Add password and role to all mockPlayers
-  const playersWithLogin = mockPlayers.map((p) => ({
-    ...p,
-    password: "player123",
-    role: "player" as const
-  }))
-   // Combine users and players
-  const allAccounts = [...users, ...playersWithLogin]
-    // Find matching user
-    const user = allAccounts.find(
-    (a) => a.email === email && a.password === password
-  )
-
-    if (user) {
-      // Store user in localStorage
-      localStorage.setItem("currentUser", JSON.stringify(user))
-
-      // Redirect based on role
-      switch (user.role) {
-        case "admin":
-          router.push("/admin/dashboard")
-          break
-        case "coach":
-          router.push("/coach")
-          break
-        case "player":
-          
-
-          router.push("/player/dashboard")
-          console.log("Logged-in user:", user);
-console.log("Found playerData:", mockPlayers.find(p => p.email === user?.email));
-          break
-        case "scouter":
-          router.push("/scout/dashboard")
-          break
-        default:
-          setError("Unknown role")
-      }
-    } else {
-      setError("Invalid email or password")
+    
+    // Client-side validation
+    if (!email.trim() || !password) {
+      setError("Email and password are required")
+      return
     }
 
-    setIsLoading(false)
+    if (!/\S+@\S+\.\S+/.test(email)) {
+      setError("Please enter a valid email address")
+      return
+    }
+
+    setIsLoading(true)
+    setError("")
+
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          email: email.trim().toLowerCase(),
+          password,
+        }),
+      })
+
+      const data = await response.json()
+
+      if (response.ok && data.success) {
+        // Store minimal user data in localStorage
+        const userData = {
+          id: data.user.id,
+          email: data.user.email,
+          firstName: data.user.firstName,
+          lastName: data.user.lastName,
+          roles: data.user.roles,
+          isActive: data.user.isActive,
+        }
+        
+        localStorage.setItem("currentUser", JSON.stringify(userData))
+        
+        // Store remember me preference
+        if (rememberMe) {
+          localStorage.setItem("rememberMe", "true")
+        } else {
+          localStorage.removeItem("rememberMe")
+        }
+
+        // Redirect based on primary role
+        const primaryRole = data.user.roles[0]
+        switch (primaryRole) {
+          case "admin":
+            router.push("/admin/dashboard")
+            break
+          case "coach":
+            router.push("/coach/dashboard")
+            break
+          case "player":
+            router.push("/player/dashboard")
+            break
+          case "scouter":
+            router.push("/scout/dashboard")
+            break
+          default:
+            router.push("/dashboard")
+        }
+      } else {
+        setError(data.error || "Invalid email or password")
+      }
+    } catch (error) {
+      console.error('Login error:', error)
+      setError("Network error. Please try again.")
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   return (
@@ -116,6 +144,7 @@ console.log("Found playerData:", mockPlayers.find(p => p.email === user?.email))
                     onChange={(e) => setEmail(e.target.value)}
                     className="pl-10"
                     required
+                    disabled={isLoading}
                   />
                 </div>
               </div>
@@ -133,11 +162,14 @@ console.log("Found playerData:", mockPlayers.find(p => p.email === user?.email))
                     onChange={(e) => setPassword(e.target.value)}
                     className="pl-10 pr-10"
                     required
+                    disabled={isLoading}
+                    minLength={8}
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
                     className="absolute right-3 top-1/2 transform -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    disabled={isLoading}
                   >
                     {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                   </button>
@@ -145,7 +177,11 @@ console.log("Found playerData:", mockPlayers.find(p => p.email === user?.email))
               </div>
 
               {/* Error message */}
-              {error && <p className="text-red-500 text-sm">{error}</p>}
+              {error && (
+                <div className="p-3 text-sm text-red-500 bg-red-50 border border-red-200 rounded-md">
+                  {error}
+                </div>
+              )}
 
               {/* Remember Me & Forgot Password */}
               <div className="flex items-center justify-between">
@@ -154,19 +190,35 @@ console.log("Found playerData:", mockPlayers.find(p => p.email === user?.email))
                     id="remember"
                     checked={rememberMe}
                     onCheckedChange={(checked) => setRememberMe(checked as boolean)}
+                    disabled={isLoading}
                   />
                   <Label htmlFor="remember" className="text-sm">
                     Remember me
                   </Label>
                 </div>
-                <Link href="/forgot-password" className="text-sm text-primary hover:underline">
+                <Link 
+                  href="/forgot-password" 
+                  className="text-sm text-primary hover:underline"
+                  onClick={(e) => isLoading && e.preventDefault()}
+                >
                   Forgot password?
                 </Link>
               </div>
 
               {/* Submit Button */}
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Signing in..." : "Sign In"}
+              <Button 
+                type="submit" 
+                className="w-full" 
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2" />
+                    Signing in...
+                  </>
+                ) : (
+                  "Sign In"
+                )}
               </Button>
             </form>
 
@@ -184,7 +236,11 @@ console.log("Found playerData:", mockPlayers.find(p => p.email === user?.email))
             <div className="text-center mt-6">
               <p className="text-sm text-muted-foreground">
                 Don't have an account?{" "}
-                <Link href="/register" className="text-primary hover:underline font-medium">
+                <Link 
+                  href="/register" 
+                  className="text-primary hover:underline font-medium"
+                  onClick={(e) => isLoading && e.preventDefault()}
+                >
                   Sign up
                 </Link>
               </p>
