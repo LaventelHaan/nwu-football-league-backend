@@ -27,9 +27,81 @@ import Link from "next/link"
 import { useState, useEffect } from "react"
 import TeamOfTheWeek from "@/components/ui/TeamOfTheWeek"
 
-//import { mockPlayers, mockFixtures, mockHomeData, mockTeamOfTheWeek } from "@/lib/mockData"
-import { mockNews,mockTopScorers,mockStandings,mockHomeData,mockFixtures, mockTeamOfTheWeek } from "@/lib/mockData" 
-const getAutomaticLiveMatches = (fixtures: any[]) => {
+// Types based on your database schema
+interface Fixture {
+  fixture_id: number
+  home_team_id: number
+  away_team_id: number
+  scheduled_at: string
+  venue_field_id?: number
+  home_team_name: string
+  away_team_name: string
+  venue_name?: string
+  field_name?: string
+  home_score?: number
+  away_score?: number
+  status_key: string
+}
+
+interface LiveMatch extends Fixture {
+  homeScore: number
+  awayScore: number
+  minute: number
+  status: string
+  events: {
+    corners: { home: number; away: number }
+    yellowCards: { home: number; away: number }
+    redCards: { home: number; away: number }
+  }
+}
+
+interface Standing {
+  team_id: number
+  team_name: string
+  position: number
+  points: number
+  wins: number
+  draws: number
+  losses: number
+  goals_scored: number
+  goals_conceded: number
+}
+
+interface TopScorer {
+  player_id: number
+  first_name: string
+  last_name: string
+  team_name: string
+  goals: number
+}
+
+interface NewsArticle {
+  id: number
+  title: string
+  excerpt: string
+  date: string
+}
+
+interface TeamOfTheWeekPlayer {
+  player_id: number
+  first_name: string
+  last_name: string
+  team_name: string
+  position_key: string
+  rating: number
+}
+
+interface TeamOfTheWeekData {
+  week: number
+  players: TeamOfTheWeekPlayer[]
+  coach?: {
+    name: string
+    team: string
+    reason: string
+  }
+}
+
+const getAutomaticLiveMatches = (fixtures: Fixture[]): LiveMatch[] => {
   const now = new Date()
   const currentTime = now.getTime()
 
@@ -37,14 +109,14 @@ const getAutomaticLiveMatches = (fixtures: any[]) => {
 
   return fixtures
     .map((fixture) => {
-      // Parse fixture date and time
-      const fixtureDateTime = new Date(`${fixture.date}T${fixture.time}:00`)
-      const fixtureEndTime = new Date(fixtureDateTime.getTime() + fixture.duration * 60 * 1000)
+      const fixtureDateTime = new Date(fixture.scheduled_at)
+      // Assume match duration of 90 minutes + 15 minutes extra time
+      const fixtureEndTime = new Date(fixtureDateTime.getTime() + 105 * 60 * 1000)
 
       const fixtureStartTime = fixtureDateTime.getTime()
       const fixtureEndTimeMs = fixtureEndTime.getTime()
 
-      console.log(`[v0] Checking fixture ${fixture.homeTeam} vs ${fixture.awayTeam}:`)
+      console.log(`[v0] Checking fixture ${fixture.home_team_name} vs ${fixture.away_team_name}:`)
       console.log(`[v0] - Start: ${fixtureDateTime.toLocaleString()}`)
       console.log(`[v0] - End: ${fixtureEndTime.toLocaleString()}`)
       console.log(`[v0] - Is Live: ${currentTime >= fixtureStartTime && currentTime <= fixtureEndTimeMs}`)
@@ -55,10 +127,9 @@ const getAutomaticLiveMatches = (fixtures: any[]) => {
 
         return {
           ...fixture,
-          id: fixture.id,
-          homeScore: Math.floor(Math.random() * 4), // Mock dynamic scores
-          awayScore: Math.floor(Math.random() * 4),
-          minute: Math.min(elapsedMinutes, fixture.duration),
+          homeScore: fixture.home_score || Math.floor(Math.random() * 4),
+          awayScore: fixture.away_score || Math.floor(Math.random() * 4),
+          minute: Math.min(elapsedMinutes, 105),
           status: "live",
           events: {
             corners: {
@@ -79,15 +150,73 @@ const getAutomaticLiveMatches = (fixtures: any[]) => {
 
       return null
     })
-    .filter(Boolean) // Remove null values
+    .filter(Boolean) as LiveMatch[]
 }
 
 export default function HomePage() {
-  const [liveMatches, setLiveMatches] = useState<any[]>([])
+  const [liveMatches, setLiveMatches] = useState<LiveMatch[]>([])
+  const [fixtures, setFixtures] = useState<Fixture[]>([])
+  const [standings, setStandings] = useState<Standing[]>([])
+  const [topScorers, setTopScorers] = useState<TopScorer[]>([])
+  const [news, setNews] = useState<NewsArticle[]>([])
+  const [teamOfTheWeek, setTeamOfTheWeek] = useState<TeamOfTheWeekData | null>(null)
+  const [loading, setLoading] = useState(true)
 
+  // Fetch all data from database
+  useEffect(() => {
+    const fetchHomeData = async () => {
+      try {
+        setLoading(true)
+        
+        // Fetch fixtures
+        const fixturesResponse = await fetch('/api/fixtures/upcoming')
+        const fixturesData = await fixturesResponse.json()
+        if (fixturesData.success) {
+          setFixtures(fixturesData.fixtures)
+        }
+
+        // Fetch standings
+        const standingsResponse = await fetch('/api/standings')
+        const standingsData = await standingsResponse.json()
+        if (standingsData.success) {
+          setStandings(standingsData.standings)
+        }
+
+        // Fetch top scorers
+        const scorersResponse = await fetch('/api/players/top-scorers')
+        const scorersData = await scorersResponse.json()
+        if (scorersData.success) {
+          setTopScorers(scorersData.topScorers)
+        }
+
+        // Fetch news (you might need to create a news table or use announcements)
+        const newsResponse = await fetch('/api/news')
+        const newsData = await newsResponse.json()
+        if (newsData.success) {
+          setNews(newsData.news)
+        }
+
+        // Fetch team of the week - FIXED: This now includes coach data
+        const teamWeekResponse = await fetch('/api/team-of-the-week')
+        const teamWeekData = await teamWeekResponse.json()
+        if (teamWeekData.success) {
+          setTeamOfTheWeek(teamWeekData.teamOfTheWeek)
+        }
+
+      } catch (error) {
+        console.error('Error fetching home data:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchHomeData()
+  }, [])
+
+  // Update live matches when fixtures change
   useEffect(() => {
     const updateLiveMatches = () => {
-      const currentLiveMatches = getAutomaticLiveMatches(mockFixtures)
+      const currentLiveMatches = getAutomaticLiveMatches(fixtures)
       setLiveMatches(currentLiveMatches)
       console.log("[v0] Updated live matches:", currentLiveMatches.length, "matches currently live")
     }
@@ -99,7 +228,18 @@ export default function HomePage() {
     const interval = setInterval(updateLiveMatches, 60000)
 
     return () => clearInterval(interval)
-  }, [])
+  }, [fixtures])
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-muted/5 to-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-lg text-muted-foreground">Loading NWU Sports...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/5 to-background">
@@ -187,6 +327,7 @@ export default function HomePage() {
           </div>
         </section>
 
+        {/* Live Matches Section */}
         {liveMatches.length > 0 && (
           <section>
             <div className="text-center mb-8">
@@ -206,7 +347,7 @@ export default function HomePage() {
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {liveMatches.map((match) => (
                 <Card
-                  key={match.id}
+                  key={match.fixture_id}
                   className="shadow-xl border-2 border-red-500/20 bg-gradient-to-br from-background/95 via-red-50/10 to-background/95 backdrop-blur-sm relative overflow-hidden"
                 >
                   {/* Live indicator animation */}
@@ -221,7 +362,7 @@ export default function HomePage() {
                       <div className="flex items-center space-x-2 text-muted-foreground">
                         <Clock className="w-4 h-4" />
                         <span className="font-semibold">
-                          {match.minute >= match.duration ? `${match.duration}' FT` : `${match.minute}'`}
+                          {match.minute >= 105 ? `105' FT` : `${match.minute}'`}
                         </span>
                       </div>
                     </div>
@@ -232,12 +373,12 @@ export default function HomePage() {
                     <div className="bg-gradient-to-r from-muted/20 via-muted/10 to-muted/20 border border-muted/30 rounded-xl p-6 backdrop-blur-sm">
                       <div className="flex justify-between items-center">
                         <div className="text-center flex-1">
-                          <div className="font-bold text-lg mb-2">{match.homeTeam}</div>
+                          <div className="font-bold text-lg mb-2">{match.home_team_name}</div>
                           <div className="text-4xl font-black text-primary">{match.homeScore}</div>
                         </div>
                         <div className="text-muted-foreground font-bold text-2xl mx-6">-</div>
                         <div className="text-center flex-1">
-                          <div className="font-bold text-lg mb-2">{match.awayTeam}</div>
+                          <div className="font-bold text-lg mb-2">{match.away_team_name}</div>
                           <div className="text-4xl font-black text-primary">{match.awayScore}</div>
                         </div>
                       </div>
@@ -268,7 +409,7 @@ export default function HomePage() {
                     {/* Venue */}
                     <div className="text-center text-muted-foreground font-medium">
                       <MapPin className="w-4 h-4 inline mr-1" />
-                      {match.venue}
+                      {match.venue_name || 'TBD'}
                     </div>
                   </CardContent>
                 </Card>
@@ -277,10 +418,10 @@ export default function HomePage() {
           </section>
         )}
 
+        {/* Team of the Week Section - FIXED: Now properly handles coach data */}
+        {teamOfTheWeek && <TeamOfTheWeek team={teamOfTheWeek} />}
 
-        {/* Team of the Week Section */}
-        <TeamOfTheWeek team={mockTeamOfTheWeek} />
-
+        {/* Featured Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Featured Matches */}
           <div className="lg:col-span-2">
@@ -294,35 +435,36 @@ export default function HomePage() {
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
-                {mockHomeData.allFixtures.map((match) => (
+                {fixtures.slice(0, 5).map((fixture) => (
                   <div
+                    key={fixture.fixture_id}
                     className="bg-gradient-to-r from-muted/20 via-muted/10 to-muted/20 border border-muted/30 rounded-xl p-6 hover:shadow-lg hover:bg-gradient-to-r hover:from-muted/30 hover:via-muted/15 hover:to-muted/30 transition-all duration-300 backdrop-blur-sm"
                   >
                     <div className="flex justify-between items-center mb-4">
                       <div className="flex items-center space-x-8">
                         <div className="text-center">
-                          <div className="font-bold text-lg mb-1">{match.homeTeam}</div>
-                          {match.status === "final" && (
-                            <div className="text-3xl font-black text-primary">{match.homeScore}</div>
+                          <div className="font-bold text-lg mb-1">{fixture.home_team_name}</div>
+                          {fixture.home_score !== undefined && (
+                            <div className="text-3xl font-black text-primary">{fixture.home_score}</div>
                           )}
                         </div>
                         <div className="text-muted-foreground font-semibold text-lg">VS</div>
                         <div className="text-center">
-                          <div className="font-bold text-lg mb-1">{match.awayTeam}</div>
-                          {match.status === "final" && (
-                            <div className="text-3xl font-black text-primary">{match.awayScore}</div>
+                          <div className="font-bold text-lg mb-1">{fixture.away_team_name}</div>
+                          {fixture.away_score !== undefined && (
+                            <div className="text-3xl font-black text-primary">{fixture.away_score}</div>
                           )}
                         </div>
                       </div>
                       <Badge
-                        variant={match.status === "final" ? "secondary" : "default"}
+                        variant={fixture.status_key === 'FINAL' ? "secondary" : "default"}
                         className="font-semibold px-4 py-2"
                       >
-                        {match.status === "final" ? "Final" : "Upcoming"}
+                        {fixture.status_key === 'FINAL' ? "Final" : "Upcoming"}
                       </Badge>
                     </div>
                     <div className="text-muted-foreground font-medium">
-                      {match.date} • {match.time} • {match.venue}
+                      {new Date(fixture.scheduled_at).toLocaleDateString()} • {new Date(fixture.scheduled_at).toLocaleTimeString()} • {fixture.venue_name || 'TBD'}
                     </div>
                   </div>
                 ))}
@@ -343,18 +485,17 @@ export default function HomePage() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-4">
-                  {mockStandings.map((team) => (
+                  {standings.slice(0, 8).map((team, index) => (
                     <div
-                      key={team.position}
+                      key={team.team_id}
                       className="flex justify-between items-center p-3 rounded-lg hover:bg-muted/20 transition-colors duration-300 backdrop-blur-sm"
                     >
                       <div className="flex items-center space-x-4">
                         <div className="w-8 h-8 bg-gradient-to-br from-primary to-primary/80 text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold shadow-sm">
-                          {team.position}
+                          {index + 1}
                         </div>
                         <div>
-                          <div className="font-bold text-base">{team.name}</div>
-
+                          <div className="font-bold text-base">{team.team_name}</div>
                           <div className="text-sm text-muted-foreground font-medium">
                             {team.wins}W • {team.draws}D • {team.losses}L
                           </div>
@@ -372,6 +513,7 @@ export default function HomePage() {
           </div>
         </div>
 
+        {/* Bottom Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Top Scorers */}
           <Card className="shadow-xl border-0 bg-gradient-to-br from-background/95 via-muted/8 to-background/95 backdrop-blur-sm">
@@ -385,9 +527,9 @@ export default function HomePage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
-                {mockTopScorers.map((player, index) => (
+                {topScorers.slice(0, 6).map((player, index) => (
                   <div
-                    key={index}
+                    key={player.player_id}
                     className="flex justify-between items-center p-3 rounded-lg hover:bg-muted/20 transition-colors duration-300 backdrop-blur-sm"
                   >
                     <div className="flex items-center space-x-4">
@@ -395,8 +537,8 @@ export default function HomePage() {
                         {index + 1}
                       </div>
                       <div>
-                        <div className="font-bold text-base">{player.name}</div>
-                        <div className="text-sm text-muted-foreground font-medium">{player.team}</div>
+                        <div className="font-bold text-base">{player.first_name} {player.last_name}</div>
+                        <div className="text-sm text-muted-foreground font-medium">{player.team_name}</div>
                       </div>
                     </div>
                     <div className="text-right">
@@ -421,7 +563,7 @@ export default function HomePage() {
             </CardHeader>
             <CardContent>
               <div className="space-y-6">
-                {mockNews.map((article) => (
+                {news.slice(0, 4).map((article) => (
                   <div key={article.id} className="border-b border-muted/30 pb-6 last:border-b-0 last:pb-0">
                     <h3 className="font-bold text-lg mb-3 text-balance hover:text-primary transition-colors duration-300 cursor-pointer">
                       {article.title}
@@ -436,7 +578,7 @@ export default function HomePage() {
         </div>
       </main>
 
-
+      {/* Footer */}
       <footer className="relative bg-gradient-to-br from-muted/90 via-muted/80 to-muted/90 mt-20 border-t border-muted/50 backdrop-blur-sm">
         <div className="absolute inset-0 bg-grid-pattern opacity-5"></div>
         <div className="relative container mx-auto px-6 py-16">

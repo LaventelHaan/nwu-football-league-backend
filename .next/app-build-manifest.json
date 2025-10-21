@@ -16,45 +16,35 @@
       "static/chunks/main-app.js",
       "static/chunks/app/home/page.js"
     ],
-    "/login/page": [
+    "/api/fixtures/upcoming/route": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/login/page.js"
+      "static/chunks/app/api/fixtures/upcoming/route.js"
     ],
-    "/register/page": [
+    "/api/standings/route": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/register/page.js"
+      "static/chunks/app/api/standings/route.js"
     ],
-    "/api/auth/register/route": [
+    "/api/players/top-scorers/route": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/api/auth/register/route.js"
+      "static/chunks/app/api/players/top-scorers/route.js"
     ],
-    "/api/auth/login/route": [
+    "/api/news/route": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/api/auth/login/route.js"
+      "static/chunks/app/api/news/route.js"
     ],
-    "/player/dashboard/loading": [
+    "/api/team-of-the-week/route": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/player/dashboard/loading.js"
+      "static/chunks/app/api/team-of-the-week/route.js"
     ],
-    "/player/dashboard/page": [
+    "/standings/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/player/dashboard/page.js"
-    ],
-    "/scout/dashboard/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/scout/dashboard/page.js"
-    ],
-    "/_not-found/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/_not-found/page.js"
+      "static/chunks/app/standings/page.js"
     ]
   }
 }

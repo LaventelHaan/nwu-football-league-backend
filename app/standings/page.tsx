@@ -3,124 +3,26 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
-import { Trophy, TrendingUp, TrendingDown, Minus, ArrowLeft } from "lucide-react"
+import { Trophy, TrendingUp, TrendingDown, Minus, ArrowLeft, Loader2 } from "lucide-react"
 import Link from "next/link"
+import { useState, useEffect } from "react"
 
-// Extended mock data for league standings
-const mockStandings = [
-  {
-    position: 1,
-    team: "NWU Eagles",
-    played: 18,
-    wins: 14,
-    draws: 3,
-    losses: 1,
-    goalsFor: 42,
-    goalsAgainst: 12,
-    goalDifference: 30,
-    points: 45,
-    form: ["W", "W", "W", "D", "W"],
-    trend: "up",
-  },
-  {
-    position: 2,
-    team: "Wits Wolves",
-    played: 18,
-    wins: 13,
-    draws: 3,
-    losses: 2,
-    goalsFor: 38,
-    goalsAgainst: 15,
-    goalDifference: 23,
-    points: 42,
-    form: ["W", "L", "W", "W", "D"],
-    trend: "same",
-  },
-  {
-    position: 3,
-    team: "UCT Lions",
-    played: 18,
-    wins: 12,
-    draws: 2,
-    losses: 4,
-    goalsFor: 35,
-    goalsAgainst: 20,
-    goalDifference: 15,
-    points: 38,
-    form: ["W", "W", "L", "W", "W"],
-    trend: "up",
-  },
-  {
-    position: 4,
-    team: "UP Tuks",
-    played: 18,
-    wins: 10,
-    draws: 4,
-    losses: 4,
-    goalsFor: 32,
-    goalsAgainst: 22,
-    goalDifference: 10,
-    points: 34,
-    form: ["D", "W", "L", "D", "W"],
-    trend: "down",
-  },
-  {
-    position: 5,
-    team: "UJ Orange",
-    played: 18,
-    wins: 9,
-    draws: 5,
-    losses: 4,
-    goalsFor: 28,
-    goalsAgainst: 25,
-    goalDifference: 3,
-    points: 32,
-    form: ["L", "D", "W", "D", "L"],
-    trend: "down",
-  },
-  {
-    position: 6,
-    team: "Stellenbosch FC",
-    played: 18,
-    wins: 8,
-    draws: 3,
-    losses: 7,
-    goalsFor: 26,
-    goalsAgainst: 28,
-    goalDifference: -2,
-    points: 27,
-    form: ["L", "W", "L", "W", "L"],
-    trend: "same",
-  },
-  {
-    position: 7,
-    team: "Rhodes United",
-    played: 18,
-    wins: 6,
-    draws: 6,
-    losses: 6,
-    goalsFor: 24,
-    goalsAgainst: 26,
-    goalDifference: -2,
-    points: 24,
-    form: ["D", "L", "D", "W", "D"],
-    trend: "up",
-  },
-  {
-    position: 8,
-    team: "UKZN Sharks",
-    played: 18,
-    wins: 4,
-    draws: 4,
-    losses: 10,
-    goalsFor: 18,
-    goalsAgainst: 35,
-    goalDifference: -17,
-    points: 16,
-    form: ["L", "L", "D", "L", "W"],
-    trend: "down",
-  },
-]
+// Types based on your existing API response
+interface TeamStanding {
+  team_id: number
+  team_name: string
+  position: number
+  points: number
+  wins: number
+  draws: number
+  losses: number
+  goals_scored: number
+  goals_conceded: number
+  goal_difference: number // Made required since we calculate it
+  matches_played: number // Made required since we calculate it
+  form: string[]
+  trend: "up" | "down" | "same"
+}
 
 const getFormBadgeVariant = (result: string) => {
   switch (result) {
@@ -131,7 +33,7 @@ const getFormBadgeVariant = (result: string) => {
     case "L":
       return "destructive"
     default:
-      return "secondary"
+      return "outline"
   }
 }
 
@@ -147,6 +49,68 @@ const getTrendIcon = (trend: string) => {
 }
 
 export default function StandingsPage() {
+  const [standings, setStandings] = useState<TeamStanding[]>([])
+  const [loading, setLoading] = useState(true)
+  const [totalMatches, setTotalMatches] = useState(0)
+
+  // Fetch standings from database
+  useEffect(() => {
+    const fetchStandingsData = async () => {
+      try {
+        setLoading(true)
+        
+        // Fetch league standings using your existing API
+        const standingsResponse = await fetch('/api/standings')
+        const standingsData = await standingsResponse.json()
+        
+        if (standingsData.success) {
+          // Calculate missing fields and add form/trend
+          const enhancedStandings: TeamStanding[] = standingsData.standings.map((team: any, index: number) => {
+            const goalDifference = team.goals_scored - team.goals_conceded
+            const matchesPlayed = (team.wins || 0) + (team.draws || 0) + (team.losses || 0)
+            
+            return {
+              ...team,
+              position: index + 1,
+              goal_difference: goalDifference,
+              matches_played: matchesPlayed,
+              form: ["-", "-", "-", "-", "-"], // Placeholder
+              trend: "same" // Placeholder
+            }
+          })
+          
+          setStandings(enhancedStandings)
+          
+          // Calculate total matches from standings
+          const totalMatchesPlayed = enhancedStandings.reduce((total: number, team: TeamStanding) => {
+            return total + team.matches_played
+          }, 0)
+          
+          // Since each match involves 2 teams, divide by 2 to get actual match count
+          setTotalMatches(Math.floor(totalMatchesPlayed / 2))
+        }
+
+      } catch (error) {
+        console.error('Error fetching standings data:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchStandingsData()
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" />
+          <p className="text-muted-foreground">Loading standings...</p>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="min-h-screen bg-background">
       {/* Header */}
@@ -185,94 +149,104 @@ export default function StandingsPage() {
                 <Trophy className="w-5 h-5" />
                 <span>University Sports League Table</span>
               </div>
-              <Badge variant="outline">18 Matches Played</Badge>
+              <Badge variant="outline">{totalMatches} Total Matches</Badge>
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left py-3 px-2 font-semibold">#</th>
-                    <th className="text-left py-3 px-2 font-semibold">Team</th>
-                    <th className="text-center py-3 px-2 font-semibold">P</th>
-                    <th className="text-center py-3 px-2 font-semibold">W</th>
-                    <th className="text-center py-3 px-2 font-semibold">D</th>
-                    <th className="text-center py-3 px-2 font-semibold">L</th>
-                    <th className="text-center py-3 px-2 font-semibold">GF</th>
-                    <th className="text-center py-3 px-2 font-semibold">GA</th>
-                    <th className="text-center py-3 px-2 font-semibold">GD</th>
-                    <th className="text-center py-3 px-2 font-semibold">Pts</th>
-                    <th className="text-center py-3 px-2 font-semibold">Form</th>
-                    <th className="text-center py-3 px-2 font-semibold"></th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {mockStandings.map((team) => (
-                    <tr key={team.position} className="border-b hover:bg-muted/50 transition-colors">
-                      <td className="py-4 px-2">
-                        <div className="flex items-center space-x-2">
-                          <div
-                            className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-                              team.position === 1
-                                ? "bg-yellow-500 text-white"
-                                : team.position <= 3
-                                  ? "bg-primary text-primary-foreground"
-                                  : team.position <= 6
-                                    ? "bg-secondary text-secondary-foreground"
-                                    : "bg-muted text-muted-foreground"
-                            }`}
-                          >
-                            {team.position}
-                          </div>
-                          {getTrendIcon(team.trend)}
-                        </div>
-                      </td>
-                      <td className="py-4 px-2">
-                        <div className="font-semibold text-foreground">{team.team}</div>
-                      </td>
-                      <td className="text-center py-4 px-2 text-muted-foreground">{team.played}</td>
-                      <td className="text-center py-4 px-2 text-green-600 font-medium">{team.wins}</td>
-                      <td className="text-center py-4 px-2 text-yellow-600 font-medium">{team.draws}</td>
-                      <td className="text-center py-4 px-2 text-red-600 font-medium">{team.losses}</td>
-                      <td className="text-center py-4 px-2 text-muted-foreground">{team.goalsFor}</td>
-                      <td className="text-center py-4 px-2 text-muted-foreground">{team.goalsAgainst}</td>
-                      <td
-                        className={`text-center py-4 px-2 font-medium ${
-                          team.goalDifference > 0
-                            ? "text-green-600"
-                            : team.goalDifference < 0
-                              ? "text-red-600"
-                              : "text-muted-foreground"
-                        }`}
-                      >
-                        {team.goalDifference > 0 ? "+" : ""}
-                        {team.goalDifference}
-                      </td>
-                      <td className="text-center py-4 px-2">
-                        <div className="font-bold text-lg text-primary">{team.points}</div>
-                      </td>
-                      <td className="text-center py-4 px-2">
-                        <div className="flex justify-center space-x-1">
-                          {team.form.map((result, index) => (
-                            <Badge
-                              key={index}
-                              variant={getFormBadgeVariant(result)}
-                              className="w-6 h-6 p-0 text-xs flex items-center justify-center"
-                            >
-                              {result}
-                            </Badge>
-                          ))}
-                        </div>
-                      </td>
-                      <td className="text-center py-4 px-2">
-                        {team.position === 1 && <Trophy className="w-4 h-4 text-yellow-500 mx-auto" />}
-                      </td>
+            {standings.length === 0 ? (
+              <div className="text-center py-8">
+                <Trophy className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                <h3 className="text-lg font-semibold mb-2">No Standings Data</h3>
+                <p className="text-muted-foreground">Standings will appear once matches are played.</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b">
+                      <th className="text-left py-3 px-2 font-semibold">#</th>
+                      <th className="text-left py-3 px-2 font-semibold">Team</th>
+                      <th className="text-center py-3 px-2 font-semibold">P</th>
+                      <th className="text-center py-3 px-2 font-semibold">W</th>
+                      <th className="text-center py-3 px-2 font-semibold">D</th>
+                      <th className="text-center py-3 px-2 font-semibold">L</th>
+                      <th className="text-center py-3 px-2 font-semibold">GF</th>
+                      <th className="text-center py-3 px-2 font-semibold">GA</th>
+                      <th className="text-center py-3 px-2 font-semibold">GD</th>
+                      <th className="text-center py-3 px-2 font-semibold">Pts</th>
+                      <th className="text-center py-3 px-2 font-semibold">Form</th>
+                      <th className="text-center py-3 px-2 font-semibold"></th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {standings.map((team) => (
+                      <tr key={team.team_id} className="border-b hover:bg-muted/50 transition-colors">
+                        <td className="py-4 px-2">
+                          <div className="flex items-center space-x-2">
+                            <div
+                              className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                                team.position === 1
+                                  ? "bg-yellow-500 text-white"
+                                  : team.position <= 3
+                                    ? "bg-primary text-primary-foreground"
+                                    : team.position <= 6
+                                      ? "bg-secondary text-secondary-foreground"
+                                      : "bg-muted text-muted-foreground"
+                              }`}
+                            >
+                              {team.position}
+                            </div>
+                            {getTrendIcon(team.trend)}
+                          </div>
+                        </td>
+                        <td className="py-4 px-2">
+                          <div className="font-semibold text-foreground">{team.team_name}</div>
+                        </td>
+                        <td className="text-center py-4 px-2 text-muted-foreground">
+                          {team.matches_played}
+                        </td>
+                        <td className="text-center py-4 px-2 text-green-600 font-medium">{team.wins}</td>
+                        <td className="text-center py-4 px-2 text-yellow-600 font-medium">{team.draws}</td>
+                        <td className="text-center py-4 px-2 text-red-600 font-medium">{team.losses}</td>
+                        <td className="text-center py-4 px-2 text-muted-foreground">{team.goals_scored}</td>
+                        <td className="text-center py-4 px-2 text-muted-foreground">{team.goals_conceded}</td>
+                        <td
+                          className={`text-center py-4 px-2 font-medium ${
+                            team.goal_difference > 0
+                              ? "text-green-600"
+                              : team.goal_difference < 0
+                                ? "text-red-600"
+                                : "text-muted-foreground"
+                          }`}
+                        >
+                          {team.goal_difference > 0 ? "+" : ""}
+                          {team.goal_difference}
+                        </td>
+                        <td className="text-center py-4 px-2">
+                          <div className="font-bold text-lg text-primary">{team.points}</div>
+                        </td>
+                        <td className="text-center py-4 px-2">
+                          <div className="flex justify-center space-x-1">
+                            {team.form.map((result, index) => (
+                              <Badge
+                                key={index}
+                                variant={getFormBadgeVariant(result)}
+                                className="w-6 h-6 p-0 text-xs flex items-center justify-center"
+                              >
+                                {result}
+                              </Badge>
+                            ))}
+                          </div>
+                        </td>
+                        <td className="text-center py-4 px-2">
+                          {team.position === 1 && <Trophy className="w-4 h-4 text-yellow-500 mx-auto" />}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -299,7 +273,7 @@ export default function StandingsPage() {
               </div>
               <div className="flex items-center space-x-3">
                 <div className="w-6 h-6 bg-muted rounded-full"></div>
-                <span className="text-sm">Relegation Zone (7th-8th)</span>
+                <span className="text-sm">Lower Table (7th+)</span>
               </div>
             </CardContent>
           </Card>
@@ -311,7 +285,7 @@ export default function StandingsPage() {
             <CardContent className="space-y-2 text-sm">
               <div className="flex justify-between">
                 <span className="font-medium">P:</span>
-                <span>Played</span>
+                <span>Matches Played</span>
               </div>
               <div className="flex justify-between">
                 <span className="font-medium">W:</span>

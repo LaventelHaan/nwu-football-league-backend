@@ -1,11 +1,10 @@
 {
-  "/api/auth/register/route": "app/api/auth/register/route.js",
-  "/api/auth/login/route": "app/api/auth/login/route.js",
-  "/_not-found/page": "app/_not-found/page.js",
+  "/api/standings/route": "app/api/standings/route.js",
+  "/api/fixtures/upcoming/route": "app/api/fixtures/upcoming/route.js",
+  "/api/players/top-scorers/route": "app/api/players/top-scorers/route.js",
+  "/api/news/route": "app/api/news/route.js",
+  "/api/team-of-the-week/route": "app/api/team-of-the-week/route.js",
   "/page": "app/page.js",
   "/home/page": "app/home/page.js",
-  "/login/page": "app/login/page.js",
-  "/register/page": "app/register/page.js",
-  "/player/dashboard/page": "app/player/dashboard/page.js",
-  "/scout/dashboard/page": "app/scout/dashboard/page.js"
+  "/standings/page": "app/standings/page.js"
 }
