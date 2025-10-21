@@ -17,64 +17,127 @@ import {
   Zap,
 } from "lucide-react"
 import Link from "next/link"
+import { useState, useEffect } from "react"
 
-// Aligned dashboard metrics based on centralized mock data
-import { mockResults,mockTeamRegistrations, mockFixtures, mockPlayers, mockTeams } from "@/lib/mockData";
+// Types based on your database schema
+interface DashboardMetrics {
+  pendingTeamApplications: number
+  unapprovedFixtures: number
+  totalUsers: number
+  activeLeagues: number
+  totalVenues: number
+  recentActivity: ActivityItem[]
+  systemStats: SystemStats
+}
 
-const dashboardMetrics = {
-  // Count of team applications that are still pending
-  pendingTeamApplications: mockTeamRegistrations.filter(reg => reg.status === "PENDING").length,
+interface ActivityItem {
+  id: number
+  action: string
+  description: string
+  timestamp: string
+  type: "pending" | "approved" | "completed"
+  user: string
+}
 
-  // Count of fixtures that are pending approval
-  unapprovedFixtures: mockFixtures.filter(fix => fix.status === "PENDING").length,
-
-  // Total users (admin, coaches, players, scouters) — assuming you have a centralized users array
-  totalUsers: 1247, // Replace with actual count if you have mockUsers: mockUsers.length
-
-  // Count of active leagues based on unique league names in fixtures or registrations
-  activeLeagues: Array.from(new Set(mockFixtures.map(f => f.league))).length,
-
-  // Total venues used across all fixtures (unique)
-  totalVenues: Array.from(new Set(mockFixtures.map(f => f.venue))).length,
-
-  // Recent activity: you can generate dynamically from team registrations and fixtures
-  recentActivity: [
-    ...mockTeamRegistrations
-      .slice(-3)
-      .map(reg => ({
-        id: reg.id,
-        action: "Team Registration",
-        description: `${reg.name} submitted registration application`,
-        timestamp: "Just now", // or derive from submittedDate
-        type: reg.status === "PENDING" ? "pending" : "approved",
-        user: reg.coach || reg.organizer || "System",
-      })),
-    ...mockFixtures
-      .slice(-3)
-      .map(fix => ({
-        id: fix.id,
-        action: "Fixture Created",
-        description: `${fix.homeTeam} vs ${fix.awayTeam} scheduled`,
-        timestamp: "Just now",
-        type: fix.status === "PENDING" ? "pending" : "approved",
-        user: fix.createdBy || "System",
-      })),
-  ],
-
-  // System stats derived from fixtures and players
-  systemStats: {
-    totalMatches: mockFixtures.length + mockResults.length,
-    completedMatches: mockResults.length,
-    upcomingMatches: mockFixtures.filter(f => f.status === "upcoming").length,
-    totalGoals: mockPlayers.reduce((sum, p) => sum + p.goals, 0),
-    averageGoalsPerMatch: parseFloat(
-      (mockPlayers.reduce((sum, p) => sum + p.goals, 0) / (mockFixtures.length + mockResults.length)).toFixed(2)
-    ),
-  },
-};
-
+interface SystemStats {
+  totalMatches: number
+  completedMatches: number
+  upcomingMatches: number
+  totalGoals: number
+  averageGoalsPerMatch: number
+}
 
 export default function AdminDashboard() {
+  const [metrics, setMetrics] = useState<DashboardMetrics>({
+    pendingTeamApplications: 0,
+    unapprovedFixtures: 0,
+    totalUsers: 0,
+    activeLeagues: 0,
+    totalVenues: 0,
+    recentActivity: [],
+    systemStats: {
+      totalMatches: 0,
+      completedMatches: 0,
+      upcomingMatches: 0,
+      totalGoals: 0,
+      averageGoalsPerMatch: 0
+    }
+  })
+  const [loading, setLoading] = useState(true)
+
+  // Fetch dashboard data from database
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true)
+        
+        // Fetch all metrics in parallel
+        const [
+          pendingTeamsRes,
+          pendingFixturesRes,
+          usersRes,
+          leaguesRes,
+          venuesRes,
+          matchesRes,
+          goalsRes,
+          activityRes
+        ] = await Promise.all([
+          fetch('/api/admin/metrics/pending-teams'),
+          fetch('/api/admin/metrics/pending-fixtures'),
+          fetch('/api/admin/metrics/users'),
+          fetch('/api/admin/metrics/leagues'),
+          fetch('/api/admin/metrics/venues'),
+          fetch('/api/admin/metrics/matches'),
+          fetch('/api/admin/metrics/goals'),
+          fetch('/api/admin/metrics/activity')
+        ])
+
+        const [
+          pendingTeams,
+          pendingFixtures,
+          users,
+          leagues,
+          venues,
+          matches,
+          goals,
+          activity
+        ] = await Promise.all([
+          pendingTeamsRes.json(),
+          pendingFixturesRes.json(),
+          usersRes.json(),
+          leaguesRes.json(),
+          venuesRes.json(),
+          matchesRes.json(),
+          goalsRes.json(),
+          activityRes.json()
+        ])
+
+        setMetrics({
+          pendingTeamApplications: pendingTeams.count || 0,
+          unapprovedFixtures: pendingFixtures.count || 0,
+          totalUsers: users.count || 0,
+          activeLeagues: leagues.count || 0,
+          totalVenues: venues.count || 0,
+          recentActivity: activity.activities || [],
+          systemStats: {
+            totalMatches: matches.total || 0,
+            completedMatches: matches.completed || 0,
+            upcomingMatches: matches.upcoming || 0,
+            totalGoals: goals.total || 0,
+            averageGoalsPerMatch: goals.average || 0
+          }
+        })
+
+      } catch (error) {
+        console.error('Error fetching dashboard data:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchDashboardData()
+  }, [])
+
   const getActivityIcon = (type: string) => {
     switch (type) {
       case "pending":
@@ -99,6 +162,17 @@ export default function AdminDashboard() {
       default:
         return "bg-gray-100 text-gray-800 border-gray-200"
     }
+  }
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary mx-auto"></div>
+          <p className="mt-4 text-lg text-muted-foreground">Loading Admin Dashboard...</p>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -132,7 +206,7 @@ export default function AdminDashboard() {
               <AlertCircle className="h-4 w-4 text-orange-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-orange-600">{dashboardMetrics.pendingTeamApplications}</div>
+              <div className="text-2xl font-bold text-orange-600">{metrics.pendingTeamApplications}</div>
               <p className="text-xs text-muted-foreground">Teams awaiting approval</p>
               <Link href="/admin/teams">
                 <Button size="sm" variant="outline" className="mt-2 w-full bg-transparent">
@@ -148,7 +222,7 @@ export default function AdminDashboard() {
               <Calendar className="h-4 w-4 text-red-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-red-600">{dashboardMetrics.unapprovedFixtures}</div>
+              <div className="text-2xl font-bold text-red-600">{metrics.unapprovedFixtures}</div>
               <p className="text-xs text-muted-foreground">Fixtures pending review</p>
               <Link href="/admin/fixtures">
                 <Button size="sm" variant="outline" className="mt-2 w-full bg-transparent">
@@ -164,10 +238,10 @@ export default function AdminDashboard() {
               <Users className="h-4 w-4 text-blue-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-blue-600">{dashboardMetrics.totalUsers}</div>
+              <div className="text-2xl font-bold text-blue-600">{metrics.totalUsers}</div>
               <p className="text-xs text-muted-foreground">
                 <TrendingUp className="inline w-3 h-3 mr-1" />
-                +12% from last month
+                Active users in system
               </p>
               <Link href="/admin/users">
                 <Button size="sm" variant="outline" className="mt-2 w-full bg-transparent">
@@ -183,7 +257,7 @@ export default function AdminDashboard() {
               <Trophy className="h-4 w-4 text-green-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold text-green-600">{dashboardMetrics.activeLeagues}</div>
+              <div className="text-2xl font-bold text-green-600">{metrics.activeLeagues}</div>
               <p className="text-xs text-muted-foreground">Currently running</p>
               <Link href="/admin/leagues">
                 <Button size="sm" variant="outline" className="mt-2 w-full bg-transparent">
@@ -206,31 +280,31 @@ export default function AdminDashboard() {
             <CardContent>
               <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
                 <div className="text-center p-4 bg-muted/50 rounded-lg">
-                  <div className="text-2xl font-bold text-primary">{dashboardMetrics.systemStats.totalMatches}</div>
+                  <div className="text-2xl font-bold text-primary">{metrics.systemStats.totalMatches}</div>
                   <div className="text-sm text-muted-foreground">Total Matches</div>
                 </div>
                 <div className="text-center p-4 bg-muted/50 rounded-lg">
                   <div className="text-2xl font-bold text-green-600">
-                    {dashboardMetrics.systemStats.completedMatches}
+                    {metrics.systemStats.completedMatches}
                   </div>
                   <div className="text-sm text-muted-foreground">Completed</div>
                 </div>
                 <div className="text-center p-4 bg-muted/50 rounded-lg">
-                  <div className="text-2xl font-bold text-blue-600">{dashboardMetrics.systemStats.upcomingMatches}</div>
+                  <div className="text-2xl font-bold text-blue-600">{metrics.systemStats.upcomingMatches}</div>
                   <div className="text-sm text-muted-foreground">Upcoming</div>
                 </div>
                 <div className="text-center p-4 bg-muted/50 rounded-lg">
-                  <div className="text-2xl font-bold text-orange-600">{dashboardMetrics.systemStats.totalGoals}</div>
+                  <div className="text-2xl font-bold text-orange-600">{metrics.systemStats.totalGoals}</div>
                   <div className="text-sm text-muted-foreground">Total Goals</div>
                 </div>
                 <div className="text-center p-4 bg-muted/50 rounded-lg">
                   <div className="text-2xl font-bold text-purple-600">
-                    {dashboardMetrics.systemStats.averageGoalsPerMatch}
+                    {metrics.systemStats.averageGoalsPerMatch.toFixed(1)}
                   </div>
                   <div className="text-sm text-muted-foreground">Avg Goals/Match</div>
                 </div>
                 <div className="text-center p-4 bg-muted/50 rounded-lg">
-                  <div className="text-2xl font-bold text-indigo-600">{dashboardMetrics.totalVenues}</div>
+                  <div className="text-2xl font-bold text-indigo-600">{metrics.totalVenues}</div>
                   <div className="text-sm text-muted-foreground">Total Venues</div>
                 </div>
               </div>
@@ -246,8 +320,10 @@ export default function AdminDashboard() {
             </CardHeader>
             <CardContent className="space-y-3">
               <Link href="/admin/live-scores" className="block">
-                
-                  
+                <Button variant="outline" className="w-full justify-start bg-transparent">
+                  <Zap className="w-4 h-4 mr-2" />
+                  Live Scores
+                </Button>
               </Link>
               <Link href="/admin/users" className="block">
                 <Button variant="outline" className="w-full justify-start bg-transparent">
@@ -291,7 +367,6 @@ export default function AdminDashboard() {
                   FAQ Management
                 </Button>
               </Link>
-
             </CardContent>
           </Card>
         </div>
@@ -312,27 +387,33 @@ export default function AdminDashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              {dashboardMetrics.recentActivity.map((activity) => (
-                <div
-                  key={activity.id}
-                  className="flex items-start space-x-4 p-4 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors"
-                >
-                  <div className="flex-shrink-0 mt-1">{getActivityIcon(activity.type)}</div>
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center justify-between">
-                      <p className="text-sm font-medium text-foreground">{activity.action}</p>
-                      <Badge variant="outline" className={getActivityBadgeColor(activity.type)}>
-                        {activity.type}
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-muted-foreground mt-1">{activity.description}</p>
-                    <div className="flex items-center justify-between mt-2">
-                      <p className="text-xs text-muted-foreground">by {activity.user}</p>
-                      <p className="text-xs text-muted-foreground">{activity.timestamp}</p>
+              {metrics.recentActivity.length === 0 ? (
+                <div className="text-center py-8 text-muted-foreground">
+                  No recent activity
+                </div>
+              ) : (
+                metrics.recentActivity.map((activity) => (
+                  <div
+                    key={activity.id}
+                    className="flex items-start space-x-4 p-4 bg-muted/30 rounded-lg hover:bg-muted/50 transition-colors"
+                  >
+                    <div className="flex-shrink-0 mt-1">{getActivityIcon(activity.type)}</div>
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center justify-between">
+                        <p className="text-sm font-medium text-foreground">{activity.action}</p>
+                        <Badge variant="outline" className={getActivityBadgeColor(activity.type)}>
+                          {activity.type}
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-1">{activity.description}</p>
+                      <div className="flex items-center justify-between mt-2">
+                        <p className="text-xs text-muted-foreground">by {activity.user}</p>
+                        <p className="text-xs text-muted-foreground">{activity.timestamp}</p>
+                      </div>
                     </div>
                   </div>
-                </div>
-              ))}
+                ))
+              )}
             </div>
           </CardContent>
         </Card>

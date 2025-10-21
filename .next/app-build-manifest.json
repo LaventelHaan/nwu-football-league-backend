@@ -41,10 +41,60 @@
       "static/chunks/main-app.js",
       "static/chunks/app/api/team-of-the-week/route.js"
     ],
-    "/standings/page": [
+    "/login/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/standings/page.js"
+      "static/chunks/app/login/page.js"
+    ],
+    "/api/auth/login/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/auth/login/route.js"
+    ],
+    "/admin/dashboard/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/admin/dashboard/page.js"
+    ],
+    "/api/admin/metrics/pending-teams/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/admin/metrics/pending-teams/route.js"
+    ],
+    "/api/admin/metrics/pending-fixtures/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/admin/metrics/pending-fixtures/route.js"
+    ],
+    "/api/admin/metrics/users/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/admin/metrics/users/route.js"
+    ],
+    "/api/admin/metrics/leagues/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/admin/metrics/leagues/route.js"
+    ],
+    "/api/admin/metrics/venues/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/admin/metrics/venues/route.js"
+    ],
+    "/api/admin/metrics/matches/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/admin/metrics/matches/route.js"
+    ],
+    "/api/admin/metrics/goals/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/admin/metrics/goals/route.js"
+    ],
+    "/api/admin/metrics/activity/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/admin/metrics/activity/route.js"
     ]
   }
 }
