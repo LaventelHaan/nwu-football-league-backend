@@ -1,414 +1,450 @@
 "use client"
 
-import { useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Badge } from "@/components/ui/badge"
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { Label } from "@/components/ui/label"
-import { Switch } from "@/components/ui/switch"
 import {
   Users,
   Search,
+  Filter,
+  MoreHorizontal,
   Edit,
   Trash2,
-  UserPlus,
-  Shield,
-  ShieldCheck,
-  UserCheck,
-  UserX,
   Mail,
   Phone,
   Calendar,
+  Shield,
+  UserCheck,
+  UserX,
+  Eye,
+  Plus,
+  ArrowLeft,
 } from "lucide-react"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+import { useState, useEffect } from "react"
+import { useRouter } from "next/navigation"
 import Link from "next/link"
 
-// Mock user data
-const mockUsers = [
-  {
-    id: 1,
-    name: "John Smith",
-    email: "john.smith@nwu.ac.za",
-    phone: "+27 82 123 4567",
-    role: "Player",
-    status: "Active",
-    joinDate: "2024-01-15",
-    lastLogin: "2024-03-10",
-    team: "Eagles FC",
-    position: "Forward",
-    avatar: "/football-player-portrait.png",
-  },
-  {
-    id: 2,
-    name: "Sarah Johnson",
-    email: "sarah.johnson@nwu.ac.za",
-    phone: "+27 83 234 5678",
-    role: "Coach",
-    status: "Active",
-    joinDate: "2023-08-20",
-    lastLogin: "2024-03-12",
-    team: "Lions United",
-    position: "Head Coach",
-    avatar: "/football-midfielder-portrait.png",
-  },
-  {
-    id: 3,
-    name: "Mike Williams",
-    email: "mike.williams@nwu.ac.za",
-    phone: "+27 84 345 6789",
-    role: "Administrator",
-    status: "Active",
-    joinDate: "2023-05-10",
-    lastLogin: "2024-03-12",
-    team: "N/A",
-    position: "System Admin",
-    avatar: "/football-striker-portrait.png",
-  },
-  {
-    id: 4,
-    name: "Emma Davis",
-    email: "emma.davis@nwu.ac.za",
-    phone: "+27 85 456 7890",
-    role: "Player",
-    status: "Inactive",
-    joinDate: "2024-02-01",
-    lastLogin: "2024-02-28",
-    team: "Tigers FC",
-    position: "Midfielder",
-    avatar: "/football-defender-portrait.png",
-  },
-  {
-    id: 5,
-    name: "David Brown",
-    email: "david.brown@nwu.ac.za",
-    phone: "+27 86 567 8901",
-    role: "Referee",
-    status: "Active",
-    joinDate: "2023-11-15",
-    lastLogin: "2024-03-11",
-    team: "N/A",
-    position: "Senior Referee",
-    avatar: "/football-goalkeeper-portrait.png",
-  },
-]
+// Types based on your database schema
+interface User {
+  user_id: number
+  email: string
+  phone_e164: string | null
+  is_active: boolean
+  email_verified_at: string | null
+  phone_verified_at: string | null
+  created_at: string
+  updated_at: string
+  profile: {
+    first_name: string
+    last_name: string
+    birth_date: string | null
+  }
+  roles: string[]
+  organizations: Array<{
+    organization_name: string
+    org_role: string
+  }>
+}
 
-const userRoles = ["Player", "Coach", "Administrator", "Referee", "Manager"]
-const userStatuses = ["Active", "Inactive", "Suspended", "Pending"]
-
-export default function UserManagement() {
-  const [users, setUsers] = useState(mockUsers)
+export default function UserManagementPage() {
+  const [users, setUsers] = useState<User[]>([])
+  const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
-  const [roleFilter, setRoleFilter] = useState("all")
-  const [statusFilter, setStatusFilter] = useState("all")
-  const [selectedUser, setSelectedUser] = useState<any>(null)
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
+  const [filterRole, setFilterRole] = useState("all")
+  const [filterStatus, setFilterStatus] = useState("all")
+  const router = useRouter()
 
-  const filteredUsers = users.filter((user) => {
-    const matchesSearch =
-      user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesRole = roleFilter === "all" || user.role === roleFilter
-    const matchesStatus = statusFilter === "all" || user.status === statusFilter
+  // Fetch users from database
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        setLoading(true)
+        const response = await fetch('/api/admin/users')
+        const data = await response.json()
+        
+        if (data.success) {
+          setUsers(data.users)
+        }
+      } catch (error) {
+        console.error('Error fetching users:', error)
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    fetchUsers()
+  }, [])
+
+  // Filter users based on search and filters
+  const filteredUsers = users.filter(user => {
+    const matchesSearch = searchTerm === "" || 
+      user.profile.first_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.profile.last_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      user.phone_e164?.toLowerCase().includes(searchTerm.toLowerCase())
+
+    const matchesRole = filterRole === "all" || user.roles.some(role => 
+      role.toLowerCase().includes(filterRole.toLowerCase())
+    )
+    
+    const matchesStatus = filterStatus === "all" || 
+      (filterStatus === "active" && user.is_active) ||
+      (filterStatus === "inactive" && !user.is_active)
 
     return matchesSearch && matchesRole && matchesStatus
   })
 
-  const handleEditUser = (user: any) => {
-    setSelectedUser(user)
-    setIsEditDialogOpen(true)
-  }
+  const handleToggleUserStatus = async (userId: number, currentStatus: boolean) => {
+    try {
+      const response = await fetch(`/api/admin/users/${userId}/status`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ is_active: !currentStatus })
+      })
 
-  const handleUpdateUser = (updatedUser: any) => {
-    setUsers(users.map((user) => (user.id === updatedUser.id ? updatedUser : user)))
-    setIsEditDialogOpen(false)
-    setSelectedUser(null)
-  }
-
-  const handleToggleStatus = (userId: number) => {
-    setUsers(
-      users.map((user) =>
-        user.id === userId ? { ...user, status: user.status === "Active" ? "Inactive" : "Active" } : user,
-      ),
-    )
-  }
-
-  const handleDeleteUser = (userId: number) => {
-    if (confirm("Are you sure you want to delete this user?")) {
-      setUsers(users.filter((user) => user.id !== userId))
+      if (response.ok) {
+        setUsers(users.map(user => 
+          user.user_id === userId 
+            ? { ...user, is_active: !currentStatus }
+            : user
+        ))
+      }
+    } catch (error) {
+      console.error('Error updating user status:', error)
     }
   }
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Active":
-        return "bg-green-100 text-green-800 border-green-200"
-      case "Inactive":
-        return "bg-gray-100 text-gray-800 border-gray-200"
-      case "Suspended":
-        return "bg-red-100 text-red-800 border-red-200"
-      case "Pending":
-        return "bg-yellow-100 text-yellow-800 border-yellow-200"
-      default:
-        return "bg-gray-100 text-gray-800 border-gray-200"
+  const handleDeleteUser = async (userId: number, userName: string) => {
+    if (!confirm(`Are you sure you want to delete user ${userName}? This action cannot be undone.`)) {
+      return
+    }
+
+    try {
+      const response = await fetch(`/api/admin/users/${userId}`, {
+        method: 'DELETE'
+      })
+
+      const data = await response.json()
+
+      if (data.success) {
+        setUsers(users.filter(user => user.user_id !== userId))
+      } else {
+        alert(data.error || 'Failed to delete user')
+      }
+    } catch (error) {
+      console.error('Error deleting user:', error)
+      alert('Failed to delete user')
     }
   }
 
-  const getRoleIcon = (role: string) => {
+  const handleEditUser = (userId: number) => {
+    router.push(`/admin/users/${userId}/edit`)
+  }
+
+  const handleViewUser = (userId: number) => {
+    router.push(`/admin/users/${userId}`)
+  }
+
+  const handleAddUser = () => {
+    router.push('/admin/users/new')
+  }
+
+  const formatDate = (dateString: string | null) => {
+    if (!dateString) return 'Not set'
+    return new Date(dateString).toLocaleDateString()
+  }
+
+  const getRoleBadgeVariant = (role: string) => {
     switch (role) {
-      case "Administrator":
-        return <ShieldCheck className="w-4 h-4" />
-      case "coach":
-        return <UserCheck className="w-4 h-4" />
-      case "Referee":
-        return <Shield className="w-4 h-4" />
+      case 'ADMIN':
+        return 'destructive'
+      case 'COACH':
+        return 'default'
+      case 'PLAYER':
+        return 'secondary'
+      case 'SCOUT':
+        return 'outline'
       default:
-        return <Users className="w-4 h-4" />
+        return 'outline'
     }
   }
 
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-background">
-      {/* Header */}
-      <div className="border-b bg-card/50 backdrop-blur-sm">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-3xl font-bold text-foreground">User Management</h1>
-              <p className="text-muted-foreground mt-1">Manage users, roles, and permissions</p>
-            </div>
-            <div className="flex items-center space-x-4">
-              <Link href="/admin/dashboard">
-                <Button variant="outline">Back to Dashboard</Button>
-              </Link>
-              <Button>
-                <UserPlus className="w-4 h-4 mr-2" />
-                Add New User
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background p-8">
+        <div className="flex items-center justify-between mb-6">
+          <div className="flex items-center gap-4">
+            <Link href="/admin/dashboard">
+              <Button variant="outline" size="sm">
+                <ArrowLeft className="w-4 h-4 mr-2" />
+                Back to Dashboard
               </Button>
+            </Link>
+            <div>
+              <h1 className="text-3xl font-bold">User Management</h1>
+              <p className="text-muted-foreground">Manage system users and permissions</p>
             </div>
           </div>
         </div>
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+            <p className="text-muted-foreground">Loading users...</p>
+          </div>
+        </div>
+      </div>
+    )
+  }
+
+  return (
+    <div className="min-h-screen bg-background p-8">
+      {/* Header */}
+      <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center gap-4">
+          <Link href="/admin/dashboard">
+            <Button variant="outline" size="sm">
+              <ArrowLeft className="w-4 h-4 mr-2" />
+              Back to Dashboard
+            </Button>
+          </Link>
+          <div>
+            <h1 className="text-3xl font-bold">User Management</h1>
+            <p className="text-muted-foreground">Manage system users and permissions</p>
+          </div>
+        </div>
+        <Button onClick={handleAddUser}>
+          <Plus className="w-4 h-4 mr-2" />
+          Add New User
+        </Button>
       </div>
 
-      <div className="container mx-auto px-4 py-8">
-        {/* Filters and Search */}
-        <Card className="mb-6 bg-card/50 backdrop-blur-sm">
-          <CardContent className="pt-6">
-            <div className="flex flex-col md:flex-row gap-4">
-              <div className="flex-1">
-                <div className="relative">
-                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
-                  <Input
-                    placeholder="Search users by name or email..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10"
-                  />
-                </div>
-              </div>
-              <div className="flex gap-4">
-                <Select value={roleFilter} onValueChange={setRoleFilter}>
-                  <SelectTrigger className="w-40">
-                    <SelectValue placeholder="Filter by role" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Roles</SelectItem>
-                    {userRoles.map((role) => (
-                      <SelectItem key={role} value={role}>
-                        {role}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Select value={statusFilter} onValueChange={setStatusFilter}>
-                  <SelectTrigger className="w-40">
-                    <SelectValue placeholder="Filter by status" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All Statuses</SelectItem>
-                    {userStatuses.map((status) => (
-                      <SelectItem key={status} value={status}>
-                        {status}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+      {/* Filters and Search */}
+      <Card className="mb-6">
+        <CardContent className="p-6">
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex-1">
+              <div className="relative">
+                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search users by name, email, or phone..."
+                  className="pl-9"
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
               </div>
             </div>
-          </CardContent>
-        </Card>
+            <div className="flex gap-2">
+              <select 
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                value={filterRole}
+                onChange={(e) => setFilterRole(e.target.value)}
+              >
+                <option value="all">All Roles</option>
+                <option value="admin">Admin</option>
+                <option value="coach">Coach</option>
+                <option value="player">Player</option>
+                <option value="scout">Scout</option>
+              </select>
+              <select 
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                value={filterStatus}
+                onChange={(e) => setFilterStatus(e.target.value)}
+              >
+                <option value="all">All Status</option>
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
-        {/* Users Table */}
-        <Card className="bg-card/50 backdrop-blur-sm">
-          <CardHeader>
-            <CardTitle className="flex items-center justify-between">
-              <div className="flex items-center">
-                <Users className="w-5 h-5 mr-2 text-primary" />
-                Users ({filteredUsers.length})
-              </div>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left py-3 px-4 font-medium">User</th>
-                    <th className="text-left py-3 px-4 font-medium">Role</th>
-                    <th className="text-left py-3 px-4 font-medium">Team/Position</th>
-                    <th className="text-left py-3 px-4 font-medium">Status</th>
-                    <th className="text-left py-3 px-4 font-medium">Last Login</th>
-                    <th className="text-left py-3 px-4 font-medium">Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredUsers.map((user) => (
-                    <tr key={user.id} className="border-b hover:bg-muted/30 transition-colors">
-                      <td className="py-4 px-4">
-                        <div className="flex items-center space-x-3">
-                          <img
-                            src={user.avatar || "/placeholder.svg"}
-                            alt={user.name}
-                            className="w-10 h-10 rounded-full object-cover"
-                          />
-                          <div>
-                            <div className="font-medium text-foreground">{user.name}</div>
-                            <div className="text-sm text-muted-foreground flex items-center">
-                              <Mail className="w-3 h-3 mr-1" />
-                              {user.email}
-                            </div>
-                            <div className="text-sm text-muted-foreground flex items-center">
-                              <Phone className="w-3 h-3 mr-1" />
-                              {user.phone}
-                            </div>
+      {/* Users Table */}
+      <Card>
+        <CardHeader>
+          <CardTitle>
+            Users ({filteredUsers.length})
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>User</TableHead>
+                <TableHead>Contact</TableHead>
+                <TableHead>Roles</TableHead>
+                <TableHead>Organizations</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Joined</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {filteredUsers.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                    No users found matching your criteria
+                  </TableCell>
+                </TableRow>
+              ) : (
+                filteredUsers.map((user) => (
+                  <TableRow key={user.user_id}>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <div className="flex-shrink-0">
+                          <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
+                            <span className="text-sm font-medium text-primary">
+                              {user.profile.first_name[0]}{user.profile.last_name[0]}
+                            </span>
                           </div>
                         </div>
-                      </td>
-                      <td className="py-4 px-4">
-                        <div className="flex items-center space-x-2">
-                          {getRoleIcon(user.role)}
-                          <span className="font-medium">{user.role}</span>
-                        </div>
-                      </td>
-                      <td className="py-4 px-4">
                         <div>
-                          <div className="font-medium">{user.team}</div>
-                          <div className="text-sm text-muted-foreground">{user.position}</div>
-                        </div>
-                      </td>
-                      <td className="py-4 px-4">
-                        <Badge variant="outline" className={getStatusColor(user.status)}>
-                          {user.status}
-                        </Badge>
-                      </td>
-                      <td className="py-4 px-4">
-                        <div className="text-sm">
-                          <div className="flex items-center text-muted-foreground">
-                            <Calendar className="w-3 h-3 mr-1" />
-                            {user.lastLogin}
+                          <div className="font-medium">
+                            {user.profile.first_name} {user.profile.last_name}
                           </div>
+                          {user.profile.birth_date && (
+                            <div className="text-sm text-muted-foreground flex items-center gap-1">
+                              <Calendar className="w-3 h-3" />
+                              {formatDate(user.profile.birth_date)}
+                            </div>
+                          )}
                         </div>
-                      </td>
-                      <td className="py-4 px-4">
-                        <div className="flex items-center space-x-2">
-                          <Button size="sm" variant="outline" onClick={() => handleEditUser(user)}>
-                            <Edit className="w-4 h-4" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleToggleStatus(user.id)}
-                            className={user.status === "Active" ? "text-red-600" : "text-green-600"}
-                          >
-                            {user.status === "Active" ? (
-                              <UserX className="w-4 h-4" />
-                            ) : (
-                              <UserCheck className="w-4 h-4" />
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <Mail className="w-3 h-3 text-muted-foreground" />
+                          <span className="text-sm">{user.email}</span>
+                          {user.email_verified_at && (
+                            <Badge variant="outline" className="text-xs">Verified</Badge>
+                          )}
+                        </div>
+                        {user.phone_e164 && (
+                          <div className="flex items-center gap-2">
+                            <Phone className="w-3 h-3 text-muted-foreground" />
+                            <span className="text-sm">{user.phone_e164}</span>
+                            {user.phone_verified_at && (
+                              <Badge variant="outline" className="text-xs">Verified</Badge>
                             )}
+                          </div>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex flex-wrap gap-1">
+                        {user.roles.map((role) => (
+                          <Badge key={role} variant={getRoleBadgeVariant(role)}>
+                            {role}
+                          </Badge>
+                        ))}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="space-y-1">
+                        {user.organizations.map((org, index) => (
+                          <div key={index} className="text-sm">
+                            <span className="font-medium">{org.organization_name}</span>
+                            <Badge variant="outline" className="ml-2 text-xs">
+                              {org.org_role}
+                            </Badge>
+                          </div>
+                        ))}
+                        {user.organizations.length === 0 && (
+                          <span className="text-sm text-muted-foreground">No organizations</span>
+                        )}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <Badge variant={user.is_active ? "default" : "secondary"}>
+                        {user.is_active ? (
+                          <>
+                            <UserCheck className="w-3 h-3 mr-1" />
+                            Active
+                          </>
+                        ) : (
+                          <>
+                            <UserX className="w-3 h-3 mr-1" />
+                            Inactive
+                          </>
+                        )}
+                      </Badge>
+                    </TableCell>
+                    <TableCell>
+                      <div className="text-sm text-muted-foreground">
+                        {formatDate(user.created_at)}
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button variant="ghost" size="sm">
+                            <MoreHorizontal className="w-4 h-4" />
                           </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => handleDeleteUser(user.id)}
-                            className="text-red-600 hover:bg-red-50"
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end">
+                          <DropdownMenuLabel>Actions</DropdownMenuLabel>
+                          <DropdownMenuItem onClick={() => handleViewUser(user.user_id)}>
+                            <Eye className="w-4 h-4 mr-2" />
+                            View Details
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => handleEditUser(user.user_id)}>
+                            <Edit className="w-4 h-4 mr-2" />
+                            Edit User
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            onClick={() => handleToggleUserStatus(user.user_id, user.is_active)}
                           >
-                            <Trash2 className="w-4 h-4" />
-                          </Button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Edit User Dialog */}
-      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Edit User</DialogTitle>
-          </DialogHeader>
-          {selectedUser && (
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="name">Full Name</Label>
-                  <Input id="name" defaultValue={selectedUser.name} placeholder="Enter full name" />
-                </div>
-                <div>
-                  <Label htmlFor="email">Email Address</Label>
-                  <Input id="email" type="email" defaultValue={selectedUser.email} placeholder="Enter email address" />
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="phone">Phone Number</Label>
-                  <Input id="phone" defaultValue={selectedUser.phone} placeholder="Enter phone number" />
-                </div>
-                <div>
-                  <Label htmlFor="role">Role</Label>
-                  <Select defaultValue={selectedUser.role}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {userRoles.map((role) => (
-                        <SelectItem key={role} value={role}>
-                          {role}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="team">Team</Label>
-                  <Input id="team" defaultValue={selectedUser.team} placeholder="Enter team name" />
-                </div>
-                <div>
-                  <Label htmlFor="position">Position</Label>
-                  <Input id="position" defaultValue={selectedUser.position} placeholder="Enter position" />
-                </div>
-              </div>
-              <div className="flex items-center space-x-2">
-                <Switch id="active" defaultChecked={selectedUser.status === "Active"} />
-                <Label htmlFor="active">Active User</Label>
-              </div>
-              <div className="flex justify-end space-x-2 pt-4">
-                <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
-                  Cancel
-                </Button>
-                <Button onClick={() => handleUpdateUser(selectedUser)}>Save Changes</Button>
-              </div>
-            </div>
-          )}
-        </DialogContent>
-      </Dialog>
+                            {user.is_active ? (
+                              <>
+                                <UserX className="w-4 h-4 mr-2" />
+                                Deactivate
+                              </>
+                            ) : (
+                              <>
+                                <UserCheck className="w-4 h-4 mr-2" />
+                                Activate
+                              </>
+                            )}
+                          </DropdownMenuItem>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem 
+                            className="text-red-600"
+                            onClick={() => handleDeleteUser(user.user_id, `${user.profile.first_name} ${user.profile.last_name}`)}
+                          >
+                            <Trash2 className="w-4 h-4 mr-2" />
+                            Delete User
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </CardContent>
+      </Card>
     </div>
   )
 }

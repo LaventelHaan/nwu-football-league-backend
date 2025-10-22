@@ -13,8 +13,10 @@
   "/api/admin/metrics/matches/route": "app/api/admin/metrics/matches/route.js",
   "/api/admin/metrics/goals/route": "app/api/admin/metrics/goals/route.js",
   "/api/admin/metrics/activity/route": "app/api/admin/metrics/activity/route.js",
+  "/api/admin/users/route": "app/api/admin/users/route.js",
   "/page": "app/page.js",
-  "/login/page": "app/login/page.js",
   "/home/page": "app/home/page.js",
-  "/admin/dashboard/page": "app/admin/dashboard/page.js"
+  "/login/page": "app/login/page.js",
+  "/admin/dashboard/page": "app/admin/dashboard/page.js",
+  "/admin/users/page": "app/admin/users/page.js"
 }
