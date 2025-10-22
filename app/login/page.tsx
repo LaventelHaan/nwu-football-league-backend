@@ -78,7 +78,7 @@ export default function LoginPage() {
             router.push("/admin/dashboard")
             break
           case "coach":
-            router.push("/coach")
+            router.push("/coach/dashboard")
             break
           case "player":
             router.push("/player/dashboard")
