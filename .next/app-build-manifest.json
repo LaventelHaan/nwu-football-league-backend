@@ -61,11 +61,6 @@
       "static/chunks/main-app.js",
       "static/chunks/app/api/admin/metrics/pending-teams/route.js"
     ],
-    "/api/admin/metrics/pending-fixtures/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/admin/metrics/pending-fixtures/route.js"
-    ],
     "/api/admin/metrics/users/route": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
@@ -76,15 +71,20 @@
       "static/chunks/main-app.js",
       "static/chunks/app/api/admin/metrics/leagues/route.js"
     ],
-    "/api/admin/metrics/venues/route": [
+    "/api/admin/metrics/pending-fixtures/route": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/api/admin/metrics/venues/route.js"
+      "static/chunks/app/api/admin/metrics/pending-fixtures/route.js"
     ],
     "/api/admin/metrics/matches/route": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/api/admin/metrics/matches/route.js"
+    ],
+    "/api/admin/metrics/venues/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/admin/metrics/venues/route.js"
     ],
     "/api/admin/metrics/goals/route": [
       "static/chunks/webpack.js",
@@ -96,20 +96,50 @@
       "static/chunks/main-app.js",
       "static/chunks/app/api/admin/metrics/activity/route.js"
     ],
-    "/admin/users/loading": [
+    "/admin/fixtures/loading": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/admin/users/loading.js"
+      "static/chunks/app/admin/fixtures/loading.js"
     ],
-    "/admin/users/page": [
+    "/admin/fixtures/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/admin/users/page.js"
+      "static/chunks/app/admin/fixtures/page.js"
     ],
-    "/api/admin/users/route": [
+    "/api/admin/fixtures/route": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
-      "static/chunks/app/api/admin/users/route.js"
+      "static/chunks/app/api/admin/fixtures/route.js"
+    ],
+    "/api/admin/fixtures/data/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/admin/fixtures/data/route.js"
+    ],
+    "/api/admin/fixtures/[id]/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/admin/fixtures/[id]/route.js"
+    ],
+    "/standings/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/standings/page.js"
+    ],
+    "/fixtures/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/fixtures/page.js"
+    ],
+    "/api/fixtures/results/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/fixtures/results/route.js"
+    ],
+    "/api/fixtures/stats/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/fixtures/stats/route.js"
     ]
   }
 }

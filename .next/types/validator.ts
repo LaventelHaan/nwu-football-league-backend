@@ -308,6 +308,33 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
   type __Unused = __Check
 }
 
+// Validate ../../app/api/admin/fixtures/[id]/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/admin/fixtures/[id]">> = Specific
+  const handler = {} as typeof import("../../app/api/admin/fixtures/[id]/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../app/api/admin/fixtures/data/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/admin/fixtures/data">> = Specific
+  const handler = {} as typeof import("../../app/api/admin/fixtures/data/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../app/api/admin/fixtures/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/admin/fixtures">> = Specific
+  const handler = {} as typeof import("../../app/api/admin/fixtures/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
 // Validate ../../app/api/admin/metrics/activity/route.ts
 {
   type __IsExpected<Specific extends RouteHandlerConfig<"/api/admin/metrics/activity">> = Specific

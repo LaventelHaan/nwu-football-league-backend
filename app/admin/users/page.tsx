@@ -57,10 +57,19 @@ interface User {
     birth_date: string | null
   }
   roles: string[]
-  organizations: Array<{
+  organizations?: Array<{
     organization_name: string
     org_role: string
   }>
+  // Add player and coach data
+  player_data?: {
+    dominant_foot: string
+    height_cm: number
+    preferred_position: string
+  }
+  coach_data?: {
+    qualification: string
+  }
 }
 
 export default function UserManagementPage() {
@@ -360,20 +369,21 @@ export default function UserManagementPage() {
                       </div>
                     </TableCell>
                     <TableCell>
-                      <div className="space-y-1">
-                        {user.organizations.map((org, index) => (
-                          <div key={index} className="text-sm">
-                            <span className="font-medium">{org.organization_name}</span>
-                            <Badge variant="outline" className="ml-2 text-xs">
-                              {org.org_role}
-                            </Badge>
-                          </div>
-                        ))}
-                        {user.organizations.length === 0 && (
-                          <span className="text-sm text-muted-foreground">No organizations</span>
-                        )}
-                      </div>
-                    </TableCell>
+                        <div className="space-y-1">
+                          {user.organizations && user.organizations.length > 0 ? (
+                            user.organizations.map((org, index) => (
+                              <div key={index} className="text-sm">
+                                <span className="font-medium">{org.organization_name}</span>
+                                <Badge variant="outline" className="ml-2 text-xs">
+                                  {org.org_role}
+                                </Badge>
+                              </div>
+                            ))
+                          ) : (
+                            <span className="text-sm text-muted-foreground">No organizations</span>
+                          )}
+                        </div>
+                      </TableCell>
                     <TableCell>
                       <Badge variant={user.is_active ? "default" : "secondary"}>
                         {user.is_active ? (

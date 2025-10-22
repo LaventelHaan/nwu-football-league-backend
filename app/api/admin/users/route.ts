@@ -1,14 +1,11 @@
 import { NextResponse } from 'next/server'
 import { query } from '@/lib/database'
+import bcrypt from 'bcryptjs'
 
-export async function GET(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+// GET - Fetch all users
+export async function GET() {
   try {
-    const userId = params.id
-
-    const userResult = await query(`
+    const users = await query(`
       SELECT 
         u.user_id,
         u.email,
@@ -22,29 +19,18 @@ export async function GET(
         up.last_name,
         up.birth_date,
         GROUP_CONCAT(DISTINCT r.role_name) as role_names,
-        p.dominant_foot,
-        p.height_cm,
-        p.preferred_position,
-        c.qualification
+        GROUP_CONCAT(DISTINCT CONCAT(o.name, '||', uo.org_role)) as organization_data
       FROM users u
       LEFT JOIN user_profiles up ON up.user_id = u.user_id
       LEFT JOIN user_roles ur ON ur.user_id = u.user_id
       LEFT JOIN roles r ON r.role_id = ur.role_id
-      LEFT JOIN players p ON p.user_id = u.user_id
-      LEFT JOIN coaches c ON c.user_id = u.user_id
-      WHERE u.user_id = ?
-      GROUP BY u.user_id, up.first_name, up.last_name, up.birth_date, p.dominant_foot, p.height_cm, p.preferred_position, c.qualification
-    `, [userId]) as any[]
+      LEFT JOIN user_organizations uo ON uo.user_id = u.user_id
+      LEFT JOIN organizations o ON o.organization_id = uo.organization_id
+      GROUP BY u.user_id, up.first_name, up.last_name, up.birth_date
+      ORDER BY u.created_at DESC
+    `) as any[]
 
-    if (userResult.length === 0) {
-      return NextResponse.json(
-        { success: false, error: 'User not found' },
-        { status: 404 }
-      )
-    }
-
-    const user = userResult[0]
-    const formattedUser = {
+    const formattedUsers = users.map(user => ({
       user_id: user.user_id,
       email: user.email,
       phone_e164: user.phone_e164,
@@ -59,149 +45,142 @@ export async function GET(
         birth_date: user.birth_date
       },
       roles: user.role_names ? user.role_names.split(',') : [],
-      player_data: user.dominant_foot ? {
-        dominant_foot: user.dominant_foot,
-        height_cm: user.height_cm,
-        preferred_position: user.preferred_position
-      } : undefined,
-      coach_data: user.qualification ? {
-        qualification: user.qualification
-      } : undefined
-    }
+      organizations: user.organization_data ? user.organization_data.split(',').map((org: string) => {
+        const [organization_name, org_role] = org.split('||')
+        return { organization_name, org_role }
+      }) : []
+    }))
 
     return NextResponse.json({
       success: true,
-      user: formattedUser
+      users: formattedUsers
     })
   } catch (error) {
-    console.error('Error fetching user:', error)
+    console.error('Error fetching users:', error)
     return NextResponse.json(
-      { success: false, error: 'Failed to fetch user' },
+      { success: false, error: 'Failed to fetch users' },
       { status: 500 }
     )
   }
 }
 
-export async function PUT(
-  request: Request,
-  { params }: { params: { id: string } }
-) {
+// POST - Create new user
+export async function POST(request: Request) {
   try {
-    const userId = params.id
     const { 
+      firstName, 
+      lastName, 
       email, 
-      phone_e164, 
-      first_name, 
-      last_name, 
-      birth_date, 
-      is_active,
-      roles,
-      dominant_foot,
-      height_cm,
-      preferred_position,
+      phone, 
+      password, 
+      role,
+      dominantFoot,
+      height,
+      preferredPosition,
       qualification
     } = await request.json()
 
+    console.log('Received data:', { firstName, lastName, email, phone, role, dominantFoot, height, preferredPosition, qualification })
+
+    // Validate required fields
+    if (!email || !password || !firstName || !lastName || !role) {
+      return NextResponse.json(
+        { success: false, error: 'Missing required fields: email, password, firstName, lastName, and role are required' },
+        { status: 400 }
+      )
+    }
+
+    // Check if user already exists
+    const existingUser = await query(
+      'SELECT user_id FROM users WHERE email = ?',
+      [email]
+    ) as any[]
+
+    if (existingUser.length > 0) {
+      return NextResponse.json(
+        { success: false, error: 'User with this email already exists' },
+        { status: 400 }
+      )
+    }
+
+    // Hash password
+    const hashedPassword = await bcrypt.hash(password, 12)
+
+    // Start transaction
     await query('START TRANSACTION')
 
     try {
-      // Update user table
+      // Create user
+      const userResult = await query(
+        `INSERT INTO users (email, phone_e164, password_hash, is_active, created_at, updated_at) 
+         VALUES (?, ?, ?, TRUE, NOW(), NOW())`,
+        [email, phone || null, hashedPassword]
+      ) as any
+
+      const userId = userResult.insertId
+
+      // Create user profile
       await query(
-        `UPDATE users 
-         SET email = ?, phone_e164 = ?, is_active = ?, updated_at = NOW() 
-         WHERE user_id = ?`,
-        [email, phone_e164 || null, is_active, userId]
+        `INSERT INTO user_profiles (user_id, first_name, last_name, created_at, updated_at) 
+         VALUES (?, ?, ?, NOW(), NOW())`,
+        [userId, firstName, lastName]
       )
 
-      // Update user profile
-      await query(
-        `UPDATE user_profiles 
-         SET first_name = ?, last_name = ?, birth_date = ?, updated_at = NOW() 
-         WHERE user_id = ?`,
-        [first_name, last_name, birth_date || null, userId]
-      )
+      // Assign role (get role_id from roles table)
+      const roleResult = await query(
+        'SELECT role_id FROM roles WHERE role_name = ?',
+        [role.toUpperCase()]
+      ) as any[]
 
-      // Update roles
-      await query('DELETE FROM user_roles WHERE user_id = ?', [userId])
-      
-      for (const role of roles) {
-        const roleResult = await query(
-          'SELECT role_id FROM roles WHERE role_name = ?',
-          [role]
-        ) as any[]
-        
-        if (roleResult.length > 0) {
-          await query(
-            'INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)',
-            [userId, roleResult[0].role_id]
-          )
-        }
+      if (roleResult.length > 0) {
+        const roleId = roleResult[0].role_id
+        await query(
+          'INSERT INTO user_roles (user_id, role_id) VALUES (?, ?)',
+          [userId, roleId]
+        )
+      } else {
+        throw new Error(`Role '${role}' not found`)
       }
 
-      // Update player data if PLAYER role exists
-      if (roles.includes('PLAYER')) {
-        const playerExists = await query(
-          'SELECT player_id FROM players WHERE user_id = ?',
-          [userId]
-        ) as any[]
-
-        if (playerExists.length > 0) {
-          await query(
-            `UPDATE players 
-             SET dominant_foot = ?, height_cm = ?, preferred_position = ?
-             WHERE user_id = ?`,
-            [dominant_foot, height_cm ? parseInt(height_cm) : null, preferred_position, userId]
-          )
-        } else {
-          await query(
-            `INSERT INTO players (user_id, dominant_foot, height_cm, preferred_position)
-             VALUES (?, ?, ?, ?)`,
-            [userId, dominant_foot, height_cm ? parseInt(height_cm) : null, preferred_position]
-          )
-        }
-      } else {
-        // Remove player data if PLAYER role is removed
-        await query('DELETE FROM players WHERE user_id = ?', [userId])
-      }
-
-      // Update coach data if COACH role exists
-      if (roles.includes('COACH')) {
-        const coachExists = await query(
-          'SELECT coach_id FROM coaches WHERE user_id = ?',
-          [userId]
-        ) as any[]
-
-        if (coachExists.length > 0) {
-          await query(
-            'UPDATE coaches SET qualification = ? WHERE user_id = ?',
-            [qualification, userId]
-          )
-        } else {
-          await query(
-            'INSERT INTO coaches (user_id, qualification) VALUES (?, ?)',
-            [userId, qualification]
-          )
-        }
-      } else {
-        // Remove coach data if COACH role is removed
-        await query('DELETE FROM coaches WHERE user_id = ?', [userId])
+      // Handle role-specific data
+      if (role.toUpperCase() === 'PLAYER') {
+        await query(
+          `INSERT INTO players (user_id, dominant_foot, height_cm, preferred_position) 
+           VALUES (?, ?, ?, ?)`,
+          [userId, dominantFoot || null, height ? parseInt(height) : null, preferredPosition || null]
+        )
+      } else if (role.toUpperCase() === 'COACH') {
+        await query(
+          'INSERT INTO coaches (user_id, qualification) VALUES (?, ?)',
+          [userId, qualification || null]
+        )
       }
 
       await query('COMMIT')
 
       return NextResponse.json({
         success: true,
-        message: 'User updated successfully'
+        message: 'User created successfully',
+        user_id: userId
       })
     } catch (error) {
       await query('ROLLBACK')
       throw error
     }
 
-  } catch (error) {
-    console.error('Error updating user:', error)
+  } catch (error: any) {
+    console.error('Error creating user:', error)
+    
+    // Handle duplicate entry errors
+    if (error.code === 'ER_DUP_ENTRY') {
+      return NextResponse.json(
+        { success: false, error: 'Email or phone number already exists' },
+        { status: 400 }
+      )
+    }
+    
     return NextResponse.json(
-      { success: false, error: 'Failed to update user' },
+      { success: false, error: error.message || 'Failed to create user' },
       { status: 500 }
     )
   }
