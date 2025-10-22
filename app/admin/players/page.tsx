@@ -1,6 +1,6 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -8,59 +8,148 @@ import { Badge } from "@/components/ui/badge"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog"
 import { Label } from "@/components/ui/label"
-import { Users, Search, Eye, Edit, Trash2, Calendar, MapPin, Mail, Phone, Trophy, Activity } from "lucide-react"
+import { Users, Search, Eye, Edit, Calendar, MapPin, Mail, Phone, Trophy, Activity, Loader2, AlertCircle } from "lucide-react"
 import Link from "next/link"
-//import { mockNews,mockTopScorers,mockStandings,mockHomeData,mockFixtures, mockTeamOfTheWeek } from "@/lib/mockData" 
-import { mockPlayers,mockNews,mockTopScorers,mockStandings,mockHomeData,mockFixtures, mockTeamOfTheWeek } from "@/lib/mockData" 
+import { toast } from "sonner"
+
+// Types
+interface Player {
+  id: number
+  name: string
+  email: string
+  team: string
+  position: string
+  status: string
+  medicalStatus: string
+  age: number
+  jerseyNumber: number
+  height: string
+  preferredFoot: string
+  weight: string
+  phone: string
+  emergencyContact: string
+  nationality: string
+  league: string
+  joinDate: string
+  contractExpiry: string
+  matchesPlayed: number
+  goals: number
+  assists: number
+  yellowCards: number
+  redCards: number
+  rating: number
+  previousClubs: string[]
+  achievements: string[]
+  injuries?: any[]
+  bio?: string
+  minutesPlayed?: number
+}
 
 const statusOptions = ["ALL", "Active", "Injured", "Suspended", "Transferred"]
-const positionOptions = ["ALL", "Goalkeeper", "Defender", "Midfielder", "Forward"]
-const teamOptions = ["ALL", "Eagles FC", "Lions United", "Tigers FC", "Women's United"]
 
 export default function PlayerManagement() {
-  const [players, setPlayers] = useState(mockPlayers)
+  const [players, setPlayers] = useState<Player[]>([])
+  const [loading, setLoading] = useState(true)
   const [searchTerm, setSearchTerm] = useState("")
   const [statusFilter, setStatusFilter] = useState("ALL")
   const [positionFilter, setPositionFilter] = useState("ALL")
   const [teamFilter, setTeamFilter] = useState("ALL")
-  const [selectedPlayer, setSelectedPlayer] = useState<any>(null)
+  const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null)
   const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false)
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
-  const [editingPlayer, setEditingPlayer] = useState<any>(null)
+  const [editingPlayer, setEditingPlayer] = useState<Player | null>(null)
+  const [teams, setTeams] = useState<string[]>([])
+  const [positions, setPositions] = useState<string[]>([])
+
+  // Fetch players from API
+  const fetchPlayers = async () => {
+    try {
+      setLoading(true)
+      const params = new URLSearchParams()
+      if (teamFilter !== 'ALL') params.append('team', teamFilter)
+      if (positionFilter !== 'ALL') params.append('position', positionFilter)
+      if (statusFilter !== 'ALL') params.append('status', statusFilter)
+
+      const response = await fetch(`/api/admin/players?${params}`)
+      if (response.ok) {
+        const data = await response.json()
+        setPlayers(data.players)
+        setTeams(data.filters.teams)
+        setPositions(data.filters.positions)
+      } else {
+        console.error('Failed to fetch players')
+        toast.error('Failed to load players')
+      }
+    } catch (error) {
+      console.error('Error fetching players:', error)
+      toast.error('Failed to load players')
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  useEffect(() => {
+    fetchPlayers()
+  }, [teamFilter, positionFilter, statusFilter])
 
   const filteredPlayers = players.filter((player) => {
     const matchesSearch =
       player.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       player.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
       player.team.toLowerCase().includes(searchTerm.toLowerCase())
-    const matchesStatus = statusFilter === "ALL" || player.status === statusFilter
-    const matchesPosition = positionFilter === "ALL" || player.position === positionFilter
-    const matchesTeam = teamFilter === "ALL" || player.team === teamFilter
-
-    return matchesSearch && matchesStatus && matchesPosition && matchesTeam
+    return matchesSearch
   })
 
-  const handleViewDetails = (player: any) => {
-    setSelectedPlayer(player)
-    setIsDetailDialogOpen(true)
+  const handleViewDetails = async (player: Player) => {
+    try {
+      const response = await fetch(`/api/admin/players/${player.id}`)
+      if (response.ok) {
+        const playerDetails = await response.json()
+        setSelectedPlayer(playerDetails)
+        setIsDetailDialogOpen(true)
+      } else {
+        const error = await response.json()
+        toast.error(error.error || 'Failed to load player details')
+      }
+    } catch (error) {
+      console.error('Error fetching player details:', error)
+      toast.error('Failed to load player details')
+    }
   }
 
-  const handleEditPlayer = (player: any) => {
+  const handleEditPlayer = (player: Player) => {
     setEditingPlayer({ ...player })
     setIsEditDialogOpen(true)
   }
 
-  const handleSavePlayer = () => {
-    if (editingPlayer) {
-      setPlayers(players.map((p) => (p.id === editingPlayer.id ? editingPlayer : p)))
-      setIsEditDialogOpen(false)
-      setEditingPlayer(null)
-    }
-  }
+  const handleSavePlayer = async () => {
+    if (!editingPlayer) return
 
-  const handleDeletePlayer = (playerId: number) => {
-    if (confirm("Are you sure you want to delete this player?")) {
-      setPlayers(players.filter((p) => p.id !== playerId))
+    try {
+      const response = await fetch(`/api/admin/players/${editingPlayer.id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          jerseyNumber: editingPlayer.jerseyNumber,
+          position: editingPlayer.position,
+          medicalStatus: editingPlayer.medicalStatus,
+        }),
+      })
+
+      if (response.ok) {
+        await fetchPlayers() // Refresh the list
+        setIsEditDialogOpen(false)
+        setEditingPlayer(null)
+        toast.success('Player updated successfully')
+      } else {
+        const error = await response.json()
+        toast.error(error.error || 'Failed to update player')
+      }
+    } catch (error) {
+      console.error('Error updating player:', error)
+      toast.error('Failed to update player')
     }
   }
 
@@ -96,6 +185,17 @@ export default function PlayerManagement() {
 
   const activePlayersCount = players.filter((p) => p.status === "Active").length
   const injuredPlayersCount = players.filter((p) => p.status === "Injured").length
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-background flex items-center justify-center">
+        <div className="flex items-center space-x-2">
+          <Loader2 className="w-6 h-6 animate-spin" />
+          <span>Loading players...</span>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-background">
@@ -144,7 +244,7 @@ export default function PlayerManagement() {
                     <SelectValue placeholder="Filter by team" />
                   </SelectTrigger>
                   <SelectContent>
-                    {teamOptions.map((team) => (
+                    {teams.map((team) => (
                       <SelectItem key={team} value={team}>
                         {team === "ALL" ? "All Teams" : team}
                       </SelectItem>
@@ -156,7 +256,7 @@ export default function PlayerManagement() {
                     <SelectValue placeholder="Filter by position" />
                   </SelectTrigger>
                   <SelectContent>
-                    {positionOptions.map((position) => (
+                    {positions.map((position) => (
                       <SelectItem key={position} value={position}>
                         {position === "ALL" ? "All Positions" : position}
                       </SelectItem>
@@ -246,15 +346,6 @@ export default function PlayerManagement() {
                         <Edit className="w-4 h-4 mr-1" />
                         Edit
                       </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => handleDeletePlayer(player.id)}
-                        className="text-red-600 hover:bg-red-50"
-                      >
-                        <Trash2 className="w-4 h-4 mr-1" />
-                        Delete
-                      </Button>
                     </div>
                   </div>
                 </div>
@@ -263,7 +354,7 @@ export default function PlayerManagement() {
           ))}
         </div>
 
-        {filteredPlayers.length === 0 && (
+        {filteredPlayers.length === 0 && !loading && (
           <Card className="bg-card/50 backdrop-blur-sm">
             <CardContent className="text-center py-12">
               <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
@@ -302,10 +393,18 @@ export default function PlayerManagement() {
                   <p className="text-sm">{selectedPlayer.age} years</p>
                 </div>
                 <div>
-                  <Label className="text-sm font-medium">Nationality</Label>
-                  <p className="text-sm">{selectedPlayer.nationality}</p>
+                  <Label className="text-sm font-medium">Team</Label>
+                  <p className="text-sm">{selectedPlayer.team}</p>
                 </div>
               </div>
+
+              {/* Bio */}
+              {selectedPlayer.bio && (
+                <div>
+                  <Label className="text-sm font-medium">Bio</Label>
+                  <p className="text-sm text-muted-foreground mt-1">{selectedPlayer.bio}</p>
+                </div>
+              )}
 
               {/* Contact & Physical Info */}
               <div className="grid grid-cols-2 gap-6">
@@ -316,14 +415,12 @@ export default function PlayerManagement() {
                       <Mail className="w-4 h-4 mr-2 text-muted-foreground" />
                       {selectedPlayer.email}
                     </div>
-                    <div className="flex items-center text-sm">
-                      <Phone className="w-4 h-4 mr-2 text-muted-foreground" />
-                      {selectedPlayer.phone}
-                    </div>
-                    <div>
-                      <Label className="text-sm font-medium">Emergency Contact</Label>
-                      <p className="text-sm text-muted-foreground">{selectedPlayer.emergencyContact}</p>
-                    </div>
+                    {selectedPlayer.phone && (
+                      <div className="flex items-center text-sm">
+                        <Phone className="w-4 h-4 mr-2 text-muted-foreground" />
+                        {selectedPlayer.phone}
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div className="space-y-4">
@@ -332,10 +429,6 @@ export default function PlayerManagement() {
                     <div>
                       <Label className="text-sm font-medium">Height</Label>
                       <p className="text-sm">{selectedPlayer.height}</p>
-                    </div>
-                    <div>
-                      <Label className="text-sm font-medium">Weight</Label>
-                      <p className="text-sm">{selectedPlayer.weight}</p>
                     </div>
                     <div>
                       <Label className="text-sm font-medium">Preferred Foot</Label>
@@ -358,6 +451,30 @@ export default function PlayerManagement() {
                 </div>
               </div>
 
+              {/* Injuries */}
+              {selectedPlayer.injuries && selectedPlayer.injuries.length > 0 && (
+                <div className="space-y-4">
+                  <h3 className="font-medium">Current Injuries</h3>
+                  <div className="space-y-2">
+                    {selectedPlayer.injuries.map((injury, index) => (
+                      <div key={index} className="flex items-center justify-between p-3 bg-red-50 rounded-lg">
+                        <div>
+                          <div className="font-medium text-sm text-red-800">{injury.injury_type}</div>
+                          <div className="text-xs text-red-600">
+                            Since: {new Date(injury.injury_date).toLocaleDateString()} • 
+                            Severity: {injury.severity}
+                            {injury.expected_return && (
+                              <> • Expected return: {new Date(injury.expected_return).toLocaleDateString()}</>
+                            )}
+                          </div>
+                        </div>
+                        <AlertCircle className="w-5 h-5 text-red-600" />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Team & Career Info */}
               <div className="grid grid-cols-2 gap-6">
                 <div className="space-y-4">
@@ -375,10 +492,12 @@ export default function PlayerManagement() {
                       <Label className="text-sm font-medium">Join Date</Label>
                       <p className="text-sm">{selectedPlayer.joinDate}</p>
                     </div>
-                    <div>
-                      <Label className="text-sm font-medium">Contract Expiry</Label>
-                      <p className="text-sm">{selectedPlayer.contractExpiry}</p>
-                    </div>
+                    {selectedPlayer.contractExpiry && selectedPlayer.contractExpiry !== 'Not specified' && (
+                      <div>
+                        <Label className="text-sm font-medium">Contract Expiry</Label>
+                        <p className="text-sm">{selectedPlayer.contractExpiry}</p>
+                      </div>
+                    )}
                   </div>
                 </div>
                 <div className="space-y-4">
@@ -408,34 +527,46 @@ export default function PlayerManagement() {
                       <Label className="text-sm font-medium">Red Cards</Label>
                       <p className="text-sm font-bold text-red-600">{selectedPlayer.redCards}</p>
                     </div>
+                    {selectedPlayer.minutesPlayed && (
+                      <div className="col-span-2">
+                        <Label className="text-sm font-medium">Minutes Played</Label>
+                        <p className="text-sm font-bold text-blue-600">{selectedPlayer.minutesPlayed} mins</p>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
 
               {/* Career History */}
-              <div className="space-y-4">
-                <h3 className="font-medium">Career History</h3>
-                <div>
-                  <Label className="text-sm font-medium">Previous Clubs</Label>
-                  <div className="flex flex-wrap gap-2 mt-1">
-                    {selectedPlayer.previousClubs.map((club: string, index: number) => (
-                      <Badge key={index} variant="outline" className="bg-muted/50">
-                        {club}
-                      </Badge>
-                    ))}
-                  </div>
+              {(selectedPlayer.previousClubs.length > 0 || selectedPlayer.achievements.length > 0) && (
+                <div className="space-y-4">
+                  <h3 className="font-medium">Career History</h3>
+                  {selectedPlayer.previousClubs.length > 0 && (
+                    <div>
+                      <Label className="text-sm font-medium">Previous Clubs</Label>
+                      <div className="flex flex-wrap gap-2 mt-1">
+                        {selectedPlayer.previousClubs.map((club: string, index: number) => (
+                          <Badge key={index} variant="outline" className="bg-muted/50">
+                            {club}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {selectedPlayer.achievements.length > 0 && (
+                    <div>
+                      <Label className="text-sm font-medium">Recent Achievements</Label>
+                      <div className="flex flex-wrap gap-2 mt-1">
+                        {selectedPlayer.achievements.map((achievement: string, index: number) => (
+                          <Badge key={index} variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-200">
+                            {achievement}
+                          </Badge>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
-                <div>
-                  <Label className="text-sm font-medium">Achievements</Label>
-                  <div className="flex flex-wrap gap-2 mt-1">
-                    {selectedPlayer.achievements.map((achievement: string, index: number) => (
-                      <Badge key={index} variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-200">
-                        {achievement}
-                      </Badge>
-                    ))}
-                  </div>
-                </div>
-              </div>
+              )}
             </div>
           )}
         </DialogContent>
@@ -451,38 +582,13 @@ export default function PlayerManagement() {
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
                 <div>
-                  <Label htmlFor="name">Name</Label>
-                  <Input
-                    id="name"
-                    value={editingPlayer.name}
-                    onChange={(e) => setEditingPlayer({ ...editingPlayer, name: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    value={editingPlayer.email}
-                    onChange={(e) => setEditingPlayer({ ...editingPlayer, email: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="phone">Phone</Label>
-                  <Input
-                    id="phone"
-                    value={editingPlayer.phone}
-                    onChange={(e) => setEditingPlayer({ ...editingPlayer, phone: e.target.value })}
-                  />
-                </div>
-                <div>
                   <Label htmlFor="jerseyNumber">Jersey Number</Label>
                   <Input
                     id="jerseyNumber"
                     type="number"
                     value={editingPlayer.jerseyNumber}
                     onChange={(e) =>
-                      setEditingPlayer({ ...editingPlayer, jerseyNumber: Number.parseInt(e.target.value) })
+                      setEditingPlayer({ ...editingPlayer, jerseyNumber: Number.parseInt(e.target.value) || 0 })
                     }
                   />
                 </div>
@@ -496,10 +602,11 @@ export default function PlayerManagement() {
                       <SelectValue />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="Goalkeeper">Goalkeeper</SelectItem>
-                      <SelectItem value="Defender">Defender</SelectItem>
-                      <SelectItem value="Midfielder">Midfielder</SelectItem>
-                      <SelectItem value="Forward">Forward</SelectItem>
+                      {positions.filter(p => p !== 'ALL').map((position) => (
+                        <SelectItem key={position} value={position}>
+                          {position}
+                        </SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>
@@ -520,14 +627,22 @@ export default function PlayerManagement() {
                     </SelectContent>
                   </Select>
                 </div>
-              </div>
-              <div>
-                <Label htmlFor="medicalStatus">Medical Status</Label>
-                <Input
-                  id="medicalStatus"
-                  value={editingPlayer.medicalStatus}
-                  onChange={(e) => setEditingPlayer({ ...editingPlayer, medicalStatus: e.target.value })}
-                />
+                <div>
+                  <Label htmlFor="medicalStatus">Medical Status</Label>
+                  <Select
+                    value={editingPlayer.medicalStatus}
+                    onValueChange={(value) => setEditingPlayer({ ...editingPlayer, medicalStatus: value })}
+                  >
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="Fit">Fit</SelectItem>
+                      <SelectItem value="Injured">Injured</SelectItem>
+                      <SelectItem value="Recovering">Recovering</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
               </div>
               <div className="flex justify-end space-x-2">
                 <Button variant="outline" onClick={() => setIsEditDialogOpen(false)}>
