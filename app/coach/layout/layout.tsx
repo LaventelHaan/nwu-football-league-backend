@@ -58,7 +58,7 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
  const handleLogout = () => {
   localStorage.removeItem("currentUser")
   // Optionally call an API logout if needed
-  router.replace("/login") // Redirect to login page
+  router.replace("/home") // Redirect to login page
 }
 
   return (
@@ -134,11 +134,16 @@ export function Sidebar({ activeTab, onTabChange }: SidebarProps) {
             <div className="flex items-center gap-3">
               <Avatar className="w-10 h-10">
                 <AvatarFallback className="bg-sidebar-primary text-sidebar-primary-foreground">
-                  {currentUser.name
-                    .split(" ")
-                    .map((n) => n[0])
-                    .join("")}
-                </AvatarFallback>
+  {currentUser
+    ? `${currentUser.firstName || ""} ${currentUser.lastName || ""}`
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+    : ""}
+</AvatarFallback>
+
+
               </Avatar>
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium text-sidebar-foreground truncate">{currentUser.name}</p>

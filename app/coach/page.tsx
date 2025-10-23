@@ -2,6 +2,7 @@
 
 import { useState, useMemo, useEffect } from "react"
 import { useRouter } from "next/navigation"
+import { useAuth } from "@/lib/auth-context"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Sidebar } from "@/app/coach/layout/layout"
 import DashboardStats from "@/app/coach/dashboard/dashboard-stats"
@@ -34,6 +35,8 @@ export default function CoachDashboard() {
 
   const [coach, setCoach] = useState<{ name: string; team?: string; role: string } | null>(null)
   const [isLoading, setIsLoading] = useState(true)
+  const { user} = useAuth()
+
   const [activeTab, setActiveTab] = useState("dashboard")
   const [players, setPlayers] = useState(mockPlayers)
   const [announcements, setAnnouncements] = useState(mockAnnouncements)
@@ -154,7 +157,7 @@ export default function CoachDashboard() {
         return (
           <div className="space-y-6">
             <div>
-              <h1 className="text-3xl font-bold text-foreground">Welcome back, {coach?.name}</h1>
+              <h1 className="text-3xl font-bold text-foreground">Welcome: {`${user?.firstName || ""} ${user?.lastName || ""}`}</h1>
               <p className="text-muted-foreground">Here's what's happening with your team today.</p>
             </div>
 
