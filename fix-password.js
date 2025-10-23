@@ -3,7 +3,7 @@ const bcrypt = require('bcryptjs');
 const mysql = require('mysql2/promise');
 
 async function fixAdminPassword() {
-    const plainTextPassword = "coach@123";
+    const plainTextPassword = "player@123";
     
     console.log('Generating new hash for password:', plainTextPassword);
     
@@ -35,7 +35,7 @@ async function fixAdminPassword() {
         // Update the user's password
         const [result] = await connection.execute(
             'UPDATE users SET password_hash = ? WHERE user_id = ?',
-            [passwordHash, 3]
+            [passwordHash, 18]
         );
         
         if (result.affectedRows > 0) {

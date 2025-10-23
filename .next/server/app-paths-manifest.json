@@ -1,13 +1,16 @@
 {
+  "/api/standings/leagues/route": "app/api/standings/leagues/route.js",
+  "/api/fixtures/live/route": "app/api/fixtures/live/route.js",
   "/api/fixtures/upcoming/route": "app/api/fixtures/upcoming/route.js",
   "/api/standings/route": "app/api/standings/route.js",
   "/api/players/top-scorers/route": "app/api/players/top-scorers/route.js",
   "/api/news/route": "app/api/news/route.js",
   "/api/team-of-the-week/route": "app/api/team-of-the-week/route.js",
+  "/api/standings/seasons/route": "app/api/standings/seasons/route.js",
+  "/api/fixtures/results/route": "app/api/fixtures/results/route.js",
+  "/api/fixtures/stats/route": "app/api/fixtures/stats/route.js",
+  "/page": "app/page.js",
   "/home/page": "app/home/page.js",
-  "/login/page": "app/login/page.js",
-  "/admin/dashboard/page": "app/admin/dashboard/page.js",
-  "/admin/faq/page": "app/admin/faq/page.js",
-  "/admin/live-scores/page": "app/admin/live-scores/page.js",
-  "/standings/page": "app/standings/page.js"
+  "/standings/page": "app/standings/page.js",
+  "/fixtures/page": "app/fixtures/page.js"
 }

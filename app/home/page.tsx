@@ -93,6 +93,12 @@ interface TeamOfTheWeekPlayer {
 
 interface TeamOfTheWeekData {
   week: number
+  team?: {
+    team_id: number
+    team_name: string
+    total_goals: number
+    matches_played: number
+  }
   players: TeamOfTheWeekPlayer[]
   coach?: {
     name: string
@@ -101,57 +107,73 @@ interface TeamOfTheWeekData {
   }
 }
 
-const getAutomaticLiveMatches = (fixtures: Fixture[]): LiveMatch[] => {
-  const now = new Date()
-  const currentTime = now.getTime()
-
-  console.log("[v0] Current time:", now.toLocaleString())
-
-  return fixtures
-    .map((fixture) => {
-      const fixtureDateTime = new Date(fixture.scheduled_at)
-      // Assume match duration of 90 minutes + 15 minutes extra time
-      const fixtureEndTime = new Date(fixtureDateTime.getTime() + 105 * 60 * 1000)
-
-      const fixtureStartTime = fixtureDateTime.getTime()
-      const fixtureEndTimeMs = fixtureEndTime.getTime()
-
-      console.log(`[v0] Checking fixture ${fixture.home_team_name} vs ${fixture.away_team_name}:`)
-      console.log(`[v0] - Start: ${fixtureDateTime.toLocaleString()}`)
-      console.log(`[v0] - End: ${fixtureEndTime.toLocaleString()}`)
-      console.log(`[v0] - Is Live: ${currentTime >= fixtureStartTime && currentTime <= fixtureEndTimeMs}`)
-
-      // Check if match should be live
-      if (currentTime >= fixtureStartTime && currentTime <= fixtureEndTimeMs) {
-        const elapsedMinutes = Math.floor((currentTime - fixtureStartTime) / (1000 * 60))
-
-        return {
-          ...fixture,
-          homeScore: fixture.home_score || Math.floor(Math.random() * 4),
-          awayScore: fixture.away_score || Math.floor(Math.random() * 4),
-          minute: Math.min(elapsedMinutes, 105),
-          status: "live",
-          events: {
-            corners: {
-              home: Math.floor(Math.random() * 8),
-              away: Math.floor(Math.random() * 8),
-            },
-            yellowCards: {
-              home: Math.floor(Math.random() * 4),
-              away: Math.floor(Math.random() * 4),
-            },
-            redCards: {
-              home: Math.floor(Math.random() * 2),
-              away: Math.floor(Math.random() * 2),
-            },
-          },
-        }
-      }
-
-      return null
-    })
-    .filter(Boolean) as LiveMatch[]
+interface League {
+  league_id: number
+  name: string
+  season_id: number
 }
+
+// Live matches functions
+const getLiveMatches = async (): Promise<LiveMatch[]> => {
+  try {
+    const now = new Date();
+    const tenMinutesAgo = new Date(now.getTime() - 10 * 60 * 1000);
+    const sixtyMinutesFromNow = new Date(now.getTime() + 60 * 60 * 1000);
+
+    const response = await fetch(`/api/fixtures/live?start=${tenMinutesAgo.toISOString()}&end=${sixtyMinutesFromNow.toISOString()}`);
+    const data = await response.json();
+    
+    if (data.success) {
+      return data.matches.map((match: any) => ({
+        ...match,
+        homeScore: match.home_score || 0,
+        awayScore: match.away_score || 0,
+        minute: calculateCurrentMinute(match.scheduled_at),
+        status: "live",
+        events: {
+          corners: {
+            home: Math.floor(Math.random() * 8),
+            away: Math.floor(Math.random() * 8),
+          },
+          yellowCards: {
+            home: Math.floor(Math.random() * 4),
+            away: Math.floor(Math.random() * 4),
+          },
+          redCards: {
+            home: Math.floor(Math.random() * 2),
+            away: Math.floor(Math.random() * 2),
+          },
+        },
+      }));
+    }
+    return [];
+  } catch (error) {
+    console.error('Error fetching live matches:', error);
+    return [];
+  }
+};
+
+const calculateCurrentMinute = (scheduledAt: string): number => {
+  const now = new Date();
+  const matchTime = new Date(scheduledAt);
+  const elapsedMinutes = Math.floor((now.getTime() - matchTime.getTime()) / (1000 * 60));
+  return Math.min(Math.max(elapsedMinutes, 0), 105); // Cap at 105 minutes (90 + 15 extra time)
+};
+
+const getNextUpcomingMatch = async (): Promise<Fixture | null> => {
+  try {
+    const response = await fetch('/api/fixtures/upcoming?limit=1');
+    const data = await response.json();
+    
+    if (data.success && data.fixtures.length > 0) {
+      return data.fixtures[0];
+    }
+    return null;
+  } catch (error) {
+    console.error('Error fetching next match:', error);
+    return null;
+  }
+};
 
 export default function HomePage() {
   const [liveMatches, setLiveMatches] = useState<LiveMatch[]>([])
@@ -160,75 +182,113 @@ export default function HomePage() {
   const [topScorers, setTopScorers] = useState<TopScorer[]>([])
   const [news, setNews] = useState<NewsArticle[]>([])
   const [teamOfTheWeek, setTeamOfTheWeek] = useState<TeamOfTheWeekData | null>(null)
+  const [leagues, setLeagues] = useState<League[]>([])
+  const [selectedLeague, setSelectedLeague] = useState<string>("")
+  const [nextMatch, setNextMatch] = useState<Fixture | null>(null)
   const [loading, setLoading] = useState(true)
 
-  // Fetch all data from database
+  // Fetch leagues first
   useEffect(() => {
-    const fetchHomeData = async () => {
+    const fetchLeagues = async () => {
       try {
-        setLoading(true)
+        const leaguesResponse = await fetch('/api/standings/leagues?season_id=1') // Default to season 1
+        const leaguesData = await leaguesResponse.json()
         
-        // Fetch fixtures
-        const fixturesResponse = await fetch('/api/fixtures/upcoming')
-        const fixturesData = await fixturesResponse.json()
-        if (fixturesData.success) {
-          setFixtures(fixturesData.fixtures)
+        if (leaguesData.success && leaguesData.leagues.length > 0) {
+          setLeagues(leaguesData.leagues)
+          setSelectedLeague(leaguesData.leagues[0].league_id.toString())
         }
-
-        // Fetch standings
-        const standingsResponse = await fetch('/api/standings')
-        const standingsData = await standingsResponse.json()
-        if (standingsData.success) {
-          setStandings(standingsData.standings)
-        }
-
-        // Fetch top scorers
-        const scorersResponse = await fetch('/api/players/top-scorers')
-        const scorersData = await scorersResponse.json()
-        if (scorersData.success) {
-          setTopScorers(scorersData.topScorers)
-        }
-
-        // Fetch news (you might need to create a news table or use announcements)
-        const newsResponse = await fetch('/api/news')
-        const newsData = await newsResponse.json()
-        if (newsData.success) {
-          setNews(newsData.news)
-        }
-
-        // Fetch team of the week - FIXED: This now includes coach data
-        const teamWeekResponse = await fetch('/api/team-of-the-week')
-        const teamWeekData = await teamWeekResponse.json()
-        if (teamWeekData.success) {
-          setTeamOfTheWeek(teamWeekData.teamOfTheWeek)
-        }
-
       } catch (error) {
-        console.error('Error fetching home data:', error)
-      } finally {
-        setLoading(false)
+        console.error('Error fetching leagues:', error)
       }
     }
 
-    fetchHomeData()
+    fetchLeagues()
   }, [])
 
-  // Update live matches when fixtures change
-  useEffect(() => {
-    const updateLiveMatches = () => {
-      const currentLiveMatches = getAutomaticLiveMatches(fixtures)
-      setLiveMatches(currentLiveMatches)
-      console.log("[v0] Updated live matches:", currentLiveMatches.length, "matches currently live")
+  // Fetch all data from database when league is selected
+useEffect(() => {
+  const fetchHomeData = async () => {
+    if (!selectedLeague) return
+
+    try {
+      setLoading(true)
+      
+      // Fetch fixtures for selected league
+      const fixturesResponse = await fetch(`/api/fixtures/upcoming?league_id=${selectedLeague}&limit=10`)
+      const fixturesData = await fixturesResponse.json()
+      if (fixturesData.success) {
+        setFixtures(fixturesData.fixtures)
+      }
+
+      // Fetch standings for selected league
+      const standingsResponse = await fetch(`/api/standings?league_id=${selectedLeague}`)
+      const standingsData = await standingsResponse.json()
+      if (standingsData.success) {
+        setStandings(standingsData.standings)
+      }
+
+      // Fetch top scorers for selected league
+      const scorersResponse = await fetch(`/api/players/top-scorers?league_id=${selectedLeague}&limit=6`)
+      const scorersData = await scorersResponse.json()
+      if (scorersData.success) {
+        setTopScorers(scorersData.topScorers)
+      }
+
+      // Fetch news
+      const newsResponse = await fetch('/api/news')
+      const newsData = await newsResponse.json()
+      if (newsData.success) {
+        setNews(newsData.news)
+      }
+
+      // Fetch team of the week
+      const teamWeekResponse = await fetch('/api/team-of-the-week')
+      const teamWeekData = await teamWeekResponse.json()
+      if (teamWeekData.success) {
+        setTeamOfTheWeek(teamWeekData.teamOfTheWeek)
+      }
+
+    } catch (error) {
+      console.error('Error fetching home data:', error)
+    } finally {
+      setLoading(false)
     }
+  }
+
+  fetchHomeData()
+}, [selectedLeague])
+
+  // Update live matches
+  useEffect(() => {
+    const updateLiveMatches = async () => {
+      const currentLiveMatches = await getLiveMatches();
+      setLiveMatches(currentLiveMatches);
+      console.log("[Live Matches] Updated:", currentLiveMatches.length, "matches currently live");
+    };
 
     // Initial update
-    updateLiveMatches()
+    updateLiveMatches();
 
-    // Update every minute
-    const interval = setInterval(updateLiveMatches, 60000)
+    // Update every minute for live matches
+    const interval = setInterval(updateLiveMatches, 60000);
 
-    return () => clearInterval(interval)
-  }, [fixtures])
+    return () => clearInterval(interval);
+  }, []);
+
+  // Fetch next match on component load
+  useEffect(() => {
+    const fetchNextMatch = async () => {
+      const match = await getNextUpcomingMatch();
+      setNextMatch(match);
+    };
+
+    fetchNextMatch();
+  }, []);
+
+  const getCurrentLeagueName = () => {
+    return leagues.find(l => l.league_id.toString() === selectedLeague)?.name || "Current League"
+  }
 
   if (loading) {
     return (
@@ -327,23 +387,64 @@ export default function HomePage() {
           </div>
         </section>
 
-        {/* Live Matches Section */}
-        {liveMatches.length > 0 && (
-          <section>
-            <div className="text-center mb-8">
-              <div className="flex items-center justify-center space-x-3 mb-3">
-                <div className="bg-red-500/15 backdrop-blur-sm rounded-lg p-2 animate-pulse">
-                  <Zap className="w-6 h-6 text-red-500" />
+        {/* League Selection Dropdown */}
+        {leagues.length > 0 && (
+          <section className="flex justify-center">
+            <Card className="shadow-lg border-0 bg-gradient-to-br from-background/95 via-muted/8 to-background/95 backdrop-blur-sm">
+              <CardContent className="pt-6">
+                <div className="flex items-center justify-center space-x-4">
+                  <Trophy className="w-5 h-5 text-primary" />
+                  <label htmlFor="league-select" className="text-sm font-medium text-muted-foreground">
+                    Select League:
+                  </label>
+                  <select
+                    id="league-select"
+                    value={selectedLeague}
+                    onChange={(e) => setSelectedLeague(e.target.value)}
+                    className="bg-background border border-muted-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent min-w-[200px]"
+                  >
+                    {leagues.map((league) => (
+                      <option key={league.league_id} value={league.league_id.toString()}>
+                        {league.name}
+                      </option>
+                    ))}
+                  </select>
+                  <Badge variant="secondary" className="font-semibold">
+                    {getCurrentLeagueName()}
+                  </Badge>
                 </div>
-                <h2 className="text-3xl font-bold text-foreground">Live Scores</h2>
+              </CardContent>
+            </Card>
+          </section>
+        )}
+
+        {/* Live Matches Section */}
+        <section>
+          <div className="text-center mb-8">
+            <div className="flex items-center justify-center space-x-3 mb-3">
+              <div className="bg-red-500/15 backdrop-blur-sm rounded-lg p-2 animate-pulse">
+                <Zap className="w-6 h-6 text-red-500" />
+              </div>
+              <h2 className="text-3xl font-bold text-foreground">
+                {liveMatches.length > 0 ? 'Live Scores' : 'Upcoming Matches'}
+              </h2>
+              {liveMatches.length > 0 && (
                 <Badge variant="destructive" className="animate-pulse font-semibold">
                   LIVE
                 </Badge>
-              </div>
-              <p className="text-muted-foreground text-lg">
-                {liveMatches.length} match{liveMatches.length !== 1 ? "es" : ""} currently in progress
-              </p>
+              )}
             </div>
+            <p className="text-muted-foreground text-lg">
+              {liveMatches.length > 0 
+                ? `${liveMatches.length} match${liveMatches.length !== 1 ? "es" : ""} currently in progress`
+                : nextMatch 
+                  ? `Next match: ${nextMatch.home_team_name} vs ${nextMatch.away_team_name}`
+                  : 'No upcoming matches scheduled'
+              }
+            </p>
+          </div>
+
+          {liveMatches.length > 0 ? (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               {liveMatches.map((match) => (
                 <Card
@@ -415,11 +516,58 @@ export default function HomePage() {
                 </Card>
               ))}
             </div>
-          </section>
-        )}
+          ) : nextMatch ? (
+            <Card className="shadow-xl border-0 bg-gradient-to-br from-background/95 via-muted/8 to-background/95 backdrop-blur-sm">
+              <CardContent className="pt-6">
+                <div className="text-center">
+                  <Calendar className="w-16 h-16 text-muted-foreground mx-auto mb-4 opacity-50" />
+                  <h3 className="text-xl font-bold mb-2">Next Match Coming Up</h3>
+                  <div className="flex justify-center items-center space-x-8 mb-4">
+                    <div className="text-center">
+                      <div className="font-bold text-lg">{nextMatch.home_team_name}</div>
+                      <div className="text-2xl font-black text-primary">VS</div>
+                    </div>
+                    <div className="text-center">
+                      <div className="font-bold text-lg">{nextMatch.away_team_name}</div>
+                    </div>
+                  </div>
+                  <p className="text-muted-foreground">
+                    {new Date(nextMatch.scheduled_at).toLocaleDateString()} • {new Date(nextMatch.scheduled_at).toLocaleTimeString()}
+                  </p>
+                  {nextMatch.venue_name && (
+                    <p className="text-muted-foreground mt-2">
+                      <MapPin className="w-4 h-4 inline mr-1" />
+                      {nextMatch.venue_name}
+                    </p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="shadow-xl border-0 bg-gradient-to-br from-background/95 via-muted/8 to-background/95 backdrop-blur-sm">
+              <CardContent className="pt-6 text-center">
+                <Calendar className="w-16 h-16 text-muted-foreground mx-auto mb-4 opacity-50" />
+                <h3 className="text-xl font-bold mb-2">No Matches Scheduled</h3>
+                <p className="text-muted-foreground">Check back later for upcoming fixtures.</p>
+              </CardContent>
+            </Card>
+          )}
+        </section>
 
-        {/* Team of the Week Section - FIXED: Now properly handles coach data */}
-        {teamOfTheWeek && <TeamOfTheWeek team={teamOfTheWeek} />}
+        {/* Team of the Week Section */}
+        {teamOfTheWeek && teamOfTheWeek.team ? (
+          <TeamOfTheWeek team={teamOfTheWeek} />
+        ) : (
+          <Card className="shadow-xl border-0 bg-gradient-to-br from-background/95 via-muted/8 to-background/95 backdrop-blur-sm">
+            <CardContent className="pt-12 pb-12 text-center">
+              <Trophy className="w-20 h-20 text-muted-foreground mx-auto mb-6 opacity-50" />
+              <h3 className="text-2xl font-bold mb-4">No Team of the Week</h3>
+              <p className="text-muted-foreground text-lg max-w-md mx-auto">
+                Team of the Week will be announced after matches are played. Check back next week!
+              </p>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Featured Content Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -468,6 +616,12 @@ export default function HomePage() {
                     </div>
                   </div>
                 ))}
+                {fixtures.length === 0 && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Calendar className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <p>No upcoming matches scheduled</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -480,7 +634,7 @@ export default function HomePage() {
                   <div className="bg-primary/15 backdrop-blur-sm rounded-lg p-2">
                     <Trophy className="w-5 h-5 text-primary" />
                   </div>
-                  <span>League Standings</span>
+                  <span>{getCurrentLeagueName()} Standings</span>
                 </CardTitle>
               </CardHeader>
               <CardContent>
@@ -491,7 +645,13 @@ export default function HomePage() {
                       className="flex justify-between items-center p-3 rounded-lg hover:bg-muted/20 transition-colors duration-300 backdrop-blur-sm"
                     >
                       <div className="flex items-center space-x-4">
-                        <div className="w-8 h-8 bg-gradient-to-br from-primary to-primary/80 text-primary-foreground rounded-full flex items-center justify-center text-sm font-bold shadow-sm">
+                        <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shadow-sm ${
+                          index === 0 
+                            ? "bg-yellow-500 text-white" 
+                            : index < 3 
+                              ? "bg-primary text-primary-foreground"
+                              : "bg-muted text-muted-foreground"
+                        }`}>
                           {index + 1}
                         </div>
                         <div>
@@ -508,6 +668,12 @@ export default function HomePage() {
                     </div>
                   ))}
                 </div>
+                {standings.length === 0 && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Trophy className="w-12 h-12 mx-auto mb-4 opacity-50" />
+                    <p>No standings data available</p>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>
@@ -533,7 +699,13 @@ export default function HomePage() {
                     className="flex justify-between items-center p-3 rounded-lg hover:bg-muted/20 transition-colors duration-300 backdrop-blur-sm"
                   >
                     <div className="flex items-center space-x-4">
-                      <div className="w-8 h-8 bg-gradient-to-br from-accent to-accent/80 text-accent-foreground rounded-full flex items-center justify-center text-sm font-bold shadow-sm">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold shadow-sm ${
+                        index === 0 
+                          ? "bg-yellow-500 text-white" 
+                          : index < 3 
+                            ? "bg-primary text-primary-foreground"
+                            : "bg-muted text-muted-foreground"
+                      }`}>
                         {index + 1}
                       </div>
                       <div>
@@ -547,6 +719,12 @@ export default function HomePage() {
                     </div>
                   </div>
                 ))}
+                {topScorers.length === 0 && (
+                  <div className="text-center py-4 text-muted-foreground">
+                    <Target className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                    <p>No scorer data available</p>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>
@@ -572,6 +750,12 @@ export default function HomePage() {
                     <div className="text-sm text-muted-foreground font-medium">{article.date}</div>
                   </div>
                 ))}
+                {news.length === 0 && (
+                  <div className="text-center py-4 text-muted-foreground">
+                    <Users className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                    <p>No news available</p>
+                  </div>
+                )}
               </div>
             </CardContent>
           </Card>

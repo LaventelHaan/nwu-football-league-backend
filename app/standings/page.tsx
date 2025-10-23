@@ -3,6 +3,7 @@
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Trophy, TrendingUp, TrendingDown, Minus, ArrowLeft, Loader2 } from "lucide-react"
 import Link from "next/link"
 import { useState, useEffect } from "react"
@@ -18,10 +19,23 @@ interface TeamStanding {
   losses: number
   goals_scored: number
   goals_conceded: number
-  goal_difference: number // Made required since we calculate it
-  matches_played: number // Made required since we calculate it
+  goal_difference: number
+  matches_played: number
   form: string[]
   trend: "up" | "down" | "same"
+}
+
+interface Season {
+  season_id: number
+  name: string
+  start_date: string
+  end_date: string
+}
+
+interface League {
+  league_id: number
+  name: string
+  season_id: number
 }
 
 const getFormBadgeVariant = (result: string) => {
@@ -50,55 +64,121 @@ const getTrendIcon = (trend: string) => {
 
 export default function StandingsPage() {
   const [standings, setStandings] = useState<TeamStanding[]>([])
+  const [seasons, setSeasons] = useState<Season[]>([])
+  const [leagues, setLeagues] = useState<League[]>([])
+  const [selectedSeason, setSelectedSeason] = useState<string>("")
+  const [selectedLeague, setSelectedLeague] = useState<string>("")
   const [loading, setLoading] = useState(true)
+  const [loadingStandings, setLoadingStandings] = useState(false)
   const [totalMatches, setTotalMatches] = useState(0)
 
-  // Fetch standings from database
+  // Fetch seasons and initial data
   useEffect(() => {
-    const fetchStandingsData = async () => {
+    const fetchInitialData = async () => {
       try {
         setLoading(true)
         
-        // Fetch league standings using your existing API
-        const standingsResponse = await fetch('/api/standings')
-        const standingsData = await standingsResponse.json()
+        // Fetch all seasons
+        const seasonsResponse = await fetch('/api/standings/seasons')
+        const seasonsData = await seasonsResponse.json()
         
-        if (standingsData.success) {
-          // Calculate missing fields and add form/trend
-          const enhancedStandings: TeamStanding[] = standingsData.standings.map((team: any, index: number) => {
-            const goalDifference = team.goals_scored - team.goals_conceded
-            const matchesPlayed = (team.wins || 0) + (team.draws || 0) + (team.losses || 0)
-            
-            return {
-              ...team,
-              position: index + 1,
-              goal_difference: goalDifference,
-              matches_played: matchesPlayed,
-              form: ["-", "-", "-", "-", "-"], // Placeholder
-              trend: "same" // Placeholder
-            }
-          })
+        if (seasonsData.success) {
+          setSeasons(seasonsData.seasons)
           
-          setStandings(enhancedStandings)
-          
-          // Calculate total matches from standings
-          const totalMatchesPlayed = enhancedStandings.reduce((total: number, team: TeamStanding) => {
-            return total + team.matches_played
-          }, 0)
-          
-          // Since each match involves 2 teams, divide by 2 to get actual match count
-          setTotalMatches(Math.floor(totalMatchesPlayed / 2))
+          // Select the most recent season by default
+          if (seasonsData.seasons.length > 0) {
+            const mostRecentSeason = seasonsData.seasons[0] // Assuming sorted by most recent
+            setSelectedSeason(mostRecentSeason.season_id.toString())
+          }
         }
 
       } catch (error) {
-        console.error('Error fetching standings data:', error)
+        console.error('Error fetching initial data:', error)
       } finally {
         setLoading(false)
       }
     }
 
-    fetchStandingsData()
+    fetchInitialData()
   }, [])
+
+  // Fetch leagues when season changes
+  useEffect(() => {
+    const fetchLeagues = async () => {
+      if (!selectedSeason) return
+
+      try {
+        const leaguesResponse = await fetch(`/api/standings/leagues?season_id=${selectedSeason}`)
+        const leaguesData = await leaguesResponse.json()
+        
+        if (leaguesData.success) {
+          setLeagues(leaguesData.leagues)
+          
+          // Select the first league by default, or clear selection if no leagues
+          if (leaguesData.leagues.length > 0) {
+            setSelectedLeague(leaguesData.leagues[0].league_id.toString())
+          } else {
+            setSelectedLeague("")
+            setStandings([])
+          }
+        }
+      } catch (error) {
+        console.error('Error fetching leagues:', error)
+        setLeagues([])
+        setSelectedLeague("")
+      }
+    }
+
+    fetchLeagues()
+  }, [selectedSeason])
+
+  // Fetch standings when league changes
+  useEffect(() => {
+    const fetchStandings = async () => {
+      if (!selectedLeague) {
+        setStandings([])
+        return
+      }
+
+      try {
+        setLoadingStandings(true)
+        
+        const standingsResponse = await fetch(`/api/standings?league_id=${selectedLeague}`)
+        const standingsData = await standingsResponse.json()
+        
+        if (standingsData.success) {
+          setStandings(standingsData.standings)
+          
+          // Calculate total matches from standings
+          const totalMatchesPlayed = standingsData.standings.reduce((total: number, team: TeamStanding) => {
+            return total + team.matches_played
+          }, 0)
+          
+          setTotalMatches(Math.floor(totalMatchesPlayed / 2))
+        } else {
+          setStandings([])
+          setTotalMatches(0)
+        }
+
+      } catch (error) {
+        console.error('Error fetching standings data:', error)
+        setStandings([])
+        setTotalMatches(0)
+      } finally {
+        setLoadingStandings(false)
+      }
+    }
+
+    fetchStandings()
+  }, [selectedLeague])
+
+  const getSelectedSeasonName = () => {
+    return seasons.find(s => s.season_id.toString() === selectedSeason)?.name || "Selected Season"
+  }
+
+  const getSelectedLeagueName = () => {
+    return leagues.find(l => l.league_id.toString() === selectedLeague)?.name || "Selected League"
+  }
 
   if (loading) {
     return (
@@ -128,36 +208,92 @@ export default function StandingsPage() {
                 <div className="text-3xl font-black">NWU</div>
                 <div>
                   <h1 className="text-2xl font-bold">League Standings</h1>
-                  <p className="text-primary-foreground/80">2024 University Sports League</p>
+                  <p className="text-primary-foreground/80">University Sports League</p>
                 </div>
               </div>
             </div>
             <div className="flex items-center space-x-2">
               <Trophy className="w-6 h-6" />
-              <span className="font-semibold">Season 2024</span>
+              <span className="font-semibold">{getSelectedSeasonName()}</span>
             </div>
           </div>
         </div>
       </header>
 
       <main className="container mx-auto px-4 py-8">
+        {/* Filters */}
+        <Card className="mb-6">
+          <CardContent className="pt-6">
+            <div className="flex flex-col md:flex-row gap-4">
+              <div className="flex-1">
+                <label className="text-sm font-medium mb-2 block">Season</label>
+                <Select value={selectedSeason} onValueChange={setSelectedSeason}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Select season" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {seasons.map((season) => (
+                      <SelectItem key={season.season_id} value={season.season_id.toString()}>
+                        {season.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="flex-1">
+                <label className="text-sm font-medium mb-2 block">League</label>
+                <Select 
+                  value={selectedLeague} 
+                  onValueChange={setSelectedLeague}
+                  disabled={!selectedSeason || leagues.length === 0}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder={leagues.length === 0 ? "No leagues available" : "Select league"} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {leagues.map((league) => (
+                      <SelectItem key={league.league_id} value={league.league_id.toString()}>
+                        {league.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* League Table */}
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center justify-between">
               <div className="flex items-center space-x-2">
                 <Trophy className="w-5 h-5" />
-                <span>University Sports League Table</span>
+                <span>{getSelectedLeagueName()} - Standings</span>
               </div>
-              <Badge variant="outline">{totalMatches} Total Matches</Badge>
+              {totalMatches > 0 && (
+                <Badge variant="outline">{totalMatches} Total Matches</Badge>
+              )}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {standings.length === 0 ? (
+            {loadingStandings ? (
+              <div className="text-center py-8">
+                <Loader2 className="w-8 h-8 animate-spin mx-auto mb-4" />
+                <p className="text-muted-foreground">Loading standings...</p>
+              </div>
+            ) : standings.length === 0 ? (
               <div className="text-center py-8">
                 <Trophy className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-semibold mb-2">No Standings Data</h3>
-                <p className="text-muted-foreground">Standings will appear once matches are played.</p>
+                <h3 className="text-lg font-semibold mb-2">
+                  {selectedLeague ? "No Standings Data" : "Select a League"}
+                </h3>
+                <p className="text-muted-foreground">
+                  {selectedLeague 
+                    ? "Standings will appear once matches are played in this league." 
+                    : "Please select a league to view standings."
+                  }
+                </p>
               </div>
             ) : (
               <div className="overflow-x-auto">
@@ -251,73 +387,75 @@ export default function StandingsPage() {
         </Card>
 
         {/* Legend */}
-        <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Table Legend</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <div className="flex items-center space-x-3">
-                <div className="w-6 h-6 bg-yellow-500 rounded-full flex items-center justify-center">
-                  <Trophy className="w-3 h-3 text-white" />
+        {standings.length > 0 && (
+          <div className="mt-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Table Legend</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                <div className="flex items-center space-x-3">
+                  <div className="w-6 h-6 bg-yellow-500 rounded-full flex items-center justify-center">
+                    <Trophy className="w-3 h-3 text-white" />
+                  </div>
+                  <span className="text-sm">Champion</span>
                 </div>
-                <span className="text-sm">Champion</span>
-              </div>
-              <div className="flex items-center space-x-3">
-                <div className="w-6 h-6 bg-primary rounded-full"></div>
-                <span className="text-sm">Championship Playoffs (2nd-3rd)</span>
-              </div>
-              <div className="flex items-center space-x-3">
-                <div className="w-6 h-6 bg-secondary rounded-full"></div>
-                <span className="text-sm">Mid-table (4th-6th)</span>
-              </div>
-              <div className="flex items-center space-x-3">
-                <div className="w-6 h-6 bg-muted rounded-full"></div>
-                <span className="text-sm">Lower Table (7th+)</span>
-              </div>
-            </CardContent>
-          </Card>
+                <div className="flex items-center space-x-3">
+                  <div className="w-6 h-6 bg-primary rounded-full"></div>
+                  <span className="text-sm">Championship Playoffs (2nd-3rd)</span>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <div className="w-6 h-6 bg-secondary rounded-full"></div>
+                  <span className="text-sm">Mid-table (4th-6th)</span>
+                </div>
+                <div className="flex items-center space-x-3">
+                  <div className="w-6 h-6 bg-muted rounded-full"></div>
+                  <span className="text-sm">Lower Table (7th+)</span>
+                </div>
+              </CardContent>
+            </Card>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-lg">Abbreviations</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-2 text-sm">
-              <div className="flex justify-between">
-                <span className="font-medium">P:</span>
-                <span>Matches Played</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="font-medium">W:</span>
-                <span>Won</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="font-medium">D:</span>
-                <span>Drawn</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="font-medium">L:</span>
-                <span>Lost</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="font-medium">GF:</span>
-                <span>Goals For</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="font-medium">GA:</span>
-                <span>Goals Against</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="font-medium">GD:</span>
-                <span>Goal Difference</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="font-medium">Pts:</span>
-                <span>Points</span>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">Abbreviations</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm">
+                <div className="flex justify-between">
+                  <span className="font-medium">P:</span>
+                  <span>Matches Played</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-medium">W:</span>
+                  <span>Won</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-medium">D:</span>
+                  <span>Drawn</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-medium">L:</span>
+                  <span>Lost</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-medium">GF:</span>
+                  <span>Goals For</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-medium">GA:</span>
+                  <span>Goals Against</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-medium">GD:</span>
+                  <span>Goal Difference</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="font-medium">Pts:</span>
+                  <span>Points</span>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </main>
     </div>
   )

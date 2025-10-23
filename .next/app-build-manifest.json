@@ -16,6 +16,16 @@
       "static/chunks/main-app.js",
       "static/chunks/app/home/page.js"
     ],
+    "/api/standings/leagues/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/standings/leagues/route.js"
+    ],
+    "/api/fixtures/live/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/fixtures/live/route.js"
+    ],
     "/api/fixtures/upcoming/route": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
@@ -41,110 +51,30 @@
       "static/chunks/main-app.js",
       "static/chunks/app/api/team-of-the-week/route.js"
     ],
-    "/login/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/login/page.js"
-    ],
-    "/api/auth/login/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/auth/login/route.js"
-    ],
-    "/admin/dashboard/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/admin/dashboard/page.js"
-    ],
-    "/api/admin/metrics/pending-teams/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/admin/metrics/pending-teams/route.js"
-    ],
-    "/api/admin/metrics/pending-fixtures/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/admin/metrics/pending-fixtures/route.js"
-    ],
-    "/api/admin/metrics/users/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/admin/metrics/users/route.js"
-    ],
-    "/api/admin/metrics/leagues/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/admin/metrics/leagues/route.js"
-    ],
-    "/api/admin/metrics/venues/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/admin/metrics/venues/route.js"
-    ],
-    "/api/admin/metrics/matches/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/admin/metrics/matches/route.js"
-    ],
-    "/api/admin/metrics/goals/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/admin/metrics/goals/route.js"
-    ],
-    "/api/admin/metrics/activity/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/admin/metrics/activity/route.js"
-    ],
-    "/admin/faq/loading": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/admin/faq/loading.js"
-    ],
-    "/admin/faq/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/admin/faq/page.js"
-    ],
-    "/api/admin/faq/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/admin/faq/route.js"
-    ],
-    "/api/admin/faq/analytics/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/admin/faq/analytics/route.js"
-    ],
-    "/api/admin/faq/[id]/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/admin/faq/[id]/route.js"
-    ],
-    "/api/admin/faq/[id]/stats/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/admin/faq/[id]/stats/route.js"
-    ],
-    "/admin/live-scores/page": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/admin/live-scores/page.js"
-    ],
-    "/api/live-matches/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/live-matches/route.js"
-    ],
-    "/api/live-matches/event-types/route": [
-      "static/chunks/webpack.js",
-      "static/chunks/main-app.js",
-      "static/chunks/app/api/live-matches/event-types/route.js"
-    ],
     "/standings/page": [
       "static/chunks/webpack.js",
       "static/chunks/main-app.js",
       "static/chunks/app/standings/page.js"
+    ],
+    "/api/standings/seasons/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/standings/seasons/route.js"
+    ],
+    "/fixtures/page": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/fixtures/page.js"
+    ],
+    "/api/fixtures/results/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/fixtures/results/route.js"
+    ],
+    "/api/fixtures/stats/route": [
+      "static/chunks/webpack.js",
+      "static/chunks/main-app.js",
+      "static/chunks/app/api/fixtures/stats/route.js"
     ]
   }
 }

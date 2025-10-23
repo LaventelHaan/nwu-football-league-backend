@@ -1,8 +1,12 @@
-import { NextResponse } from 'next/server'
+import { NextRequest, NextResponse } from 'next/server'
 import { query } from '@/lib/database'
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
+    const { searchParams } = new URL(request.url)
+    const leagueId = searchParams.get('league_id') || '1' // Default to league 1
+    const limit = searchParams.get('limit') || '10'
+
     const topScorers = await query(`
       SELECT 
         p.player_id,
@@ -15,11 +19,11 @@ export async function GET() {
       JOIN user_profiles up ON up.user_id = p.user_id
       JOIN team_memberships tm ON tm.player_id = p.player_id AND tm.left_at IS NULL
       JOIN teams t ON t.team_id = tm.team_id
-      WHERE ps.league_id = 1  -- Replace with current league ID
+      WHERE ps.league_id = ?
         AND ps.goals > 0
       ORDER BY ps.goals DESC, up.first_name ASC
-      LIMIT 10
-    `) as any[]
+      LIMIT ${parseInt(limit)}
+    `, [parseInt(leagueId)]) as any[]
 
     return NextResponse.json({
       success: true,
