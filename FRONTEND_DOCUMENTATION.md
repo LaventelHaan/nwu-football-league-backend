@@ -50,6 +50,13 @@ app/
 │   ├── players/           # Player management
 │   ├── matches/           # Match management
 │   └── ...
+├── scout/
+│   ├──dashboard/ (scout overview)
+│   ├──prospects/ (prospect player management)
+│   ├──reports/ (scouting reports)
+│   ├──events/ (scouting events)
+│   ├──regions/ (scouting regions)
+│   └── ...
 ├── players/               # Player-specific features
 │   └── [id]/              # Dynamic player profiles
 ├── auth/                  # Authentication pages
