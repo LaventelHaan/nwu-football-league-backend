@@ -237,7 +237,7 @@ export default function RegisterPage() {
                   <SelectContent>
                     <SelectItem value="player">Player</SelectItem>
                     <SelectItem value="coach">Coach</SelectItem>
-                    <SelectItem value="scouter">Scout</SelectItem>
+                    <SelectItem value="scout">Scout</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
