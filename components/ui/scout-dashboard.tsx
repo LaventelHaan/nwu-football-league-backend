@@ -38,7 +38,7 @@ import {
 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 
-export default function ScouterDashboard() {
+export default function ScoutDashboard() {
   const { user, logout } = useAuth()
   const router = useRouter()
   const { toast } = useToast()
@@ -357,11 +357,12 @@ ${report.notes}
             <Avatar>
               <AvatarImage src={user?.avatar || "/placeholder.svg"} />
               <AvatarFallback>
-                {user?.name
-                  .split(" ")
-                  .map((n) => n[0])
-                  .join("")}
-              </AvatarFallback>
+  {user
+    ? `${user.firstName?.[0] || ""}${user.lastName?.[0] || ""}`.toUpperCase()
+    : ""}
+</AvatarFallback>
+
+
             </Avatar>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-medium truncate">{user?.name}</p>
@@ -384,7 +385,8 @@ ${report.notes}
         <header className="border-b bg-card sticky top-0 z-10">
           <div className="flex items-center justify-between p-6">
             <div>
-              <h2 className="text-2xl font-bold">Welcome, {user?.name.split(" ")[0]}</h2>
+              <h2 className="text-2xl font-bold">Welcome, {`${user?.firstName || ""} ${user?.lastName || ""}`.split(" ")[0]}
+</h2>
               <p className="text-sm text-muted-foreground">Scout players and submit comprehensive reports</p>
             </div>
             <div className="flex items-center gap-2">
@@ -394,11 +396,11 @@ ${report.notes}
               <Avatar>
                 <AvatarImage src={user?.avatar || "/placeholder.svg"} />
                 <AvatarFallback>
-                  {user?.name
-                    .split(" ")
-                    .map((n) => n[0])
-                    .join("")}
-                </AvatarFallback>
+  {user
+    ? `${user.firstName?.[0] || ""}${user.lastName?.[0] || ""}`.toUpperCase()
+    : ""}
+</AvatarFallback>
+
               </Avatar>
             </div>
           </div>
