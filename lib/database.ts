@@ -1,17 +1,14 @@
 import mysql from 'mysql2/promise'
 
-const dbConfig = {
-  host: process.env.DB_HOST,
-  port: parseInt(process.env.DB_PORT || '3306'),
-  user: process.env.DB_USER,
-  password: process.env.DB_PASSWORD,
-  database: process.env.DB_NAME,
-  waitForConnections: true,
-  connectionLimit: 10,
-  queueLimit: 0,
-}
+const config = {
+  host: process.env.MYSQLHOST || 'localhost',
+  user: process.env.MYSQLUSER || 'root',
+  password: process.env.MYSQLPASSWORD || 'Dragonballz1',
+  database: process.env.MYSQLDATABASE || 'nwu_football_league',
+  port: process.env.MYSQLPORT ? parseInt(process.env.MYSQLPORT) : 3306
+};
 
-const pool = mysql.createPool(dbConfig)
+const pool = mysql.createPool(config)
 
 export async function query(sql: string, params: any[] = []) {
   try {
