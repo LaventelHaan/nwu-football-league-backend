@@ -1,14 +1,15 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  eslint: {
-    ignoreDuringBuilds: true,
+  experimental: {
+    serverComponentsExternalPackages: ['mysql2'],
   },
-  typescript: {
-    ignoreBuildErrors: true,
-  },
-  images: {
-    unoptimized: true,
+  env: {
+    MYSQLHOST: process.env.MYSQLHOST,
+    MYSQLUSER: process.env.MYSQLUSER,
+    MYSQLPASSWORD: process.env.MYSQLPASSWORD,
+    MYSQLDATABASE: process.env.MYSQLDATABASE,
+    MYSQLPORT: process.env.MYSQLPORT,
   },
 }
 
-export default nextConfig
+module.exports = nextConfig
