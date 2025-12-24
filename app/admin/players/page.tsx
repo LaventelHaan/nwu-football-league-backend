@@ -11,24 +11,46 @@ import { Label } from "@/components/ui/label"
 import { Users, Search, Eye, Edit, Trash2, Calendar, MapPin, Mail, Phone, Trophy, Activity } from "lucide-react"
 import Link from "next/link"
 //import { mockNews,mockTopScorers,mockStandings,mockHomeData,mockFixtures, mockTeamOfTheWeek } from "@/lib/mockData" 
-import { mockPlayers,mockNews,mockTopScorers,mockStandings,mockHomeData,mockFixtures, mockTeamOfTheWeek } from "@/lib/mockData" 
+import { mockPlayers, mockNews, mockTopScorers, mockStandings, mockHomeData, mockFixtures, mockTeamOfTheWeek, Player } from "@/lib/mockData"
 
-const statusOptions = ["ALL", "Active", "Injured", "Suspended", "Transferred"]
-const positionOptions = ["ALL", "Goalkeeper", "Defender", "Midfielder", "Forward"]
-const teamOptions = ["ALL", "Eagles FC", "Lions United", "Tigers FC", "Women's United"]
+
+const statusOptions = ["ALL", "Active", "Injured", "Suspended", "Transferred"];
+const positionOptions = ["ALL", "Goalkeeper", "Defender", "Midfielder", "Forward"];
+// Dynamically get unique team names from mockPlayers
+const teamOptions = [
+  "ALL",
+  ...Array.from(new Set(mockPlayers.map((p) => p.team))).sort()
+];
+
 
 export default function PlayerManagement() {
-  const [players, setPlayers] = useState(mockPlayers)
-  const [searchTerm, setSearchTerm] = useState("")
-  const [statusFilter, setStatusFilter] = useState("ALL")
-  const [positionFilter, setPositionFilter] = useState("ALL")
-  const [teamFilter, setTeamFilter] = useState("ALL")
-  const [selectedPlayer, setSelectedPlayer] = useState<any>(null)
-  const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false)
-  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
-  const [editingPlayer, setEditingPlayer] = useState<any>(null)
+  // Load from localStorage if available, else use mockPlayers
+  const getInitialPlayers = () => {
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem("players");
+      if (stored) return JSON.parse(stored);
+    }
+    return mockPlayers;
+  };
+  const [players, setPlayers] = useState(getInitialPlayers);
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("ALL");
+  const [positionFilter, setPositionFilter] = useState("ALL");
+  const [teamFilter, setTeamFilter] = useState("ALL");
+  const [selectedPlayer, setSelectedPlayer] = useState<any>(null);
+  const [isDetailDialogOpen, setIsDetailDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingPlayer, setEditingPlayer] = useState<any>(null);
 
-  const filteredPlayers = players.filter((player) => {
+  // Save to localStorage on change
+  const persistPlayers = (newPlayers: any[]) => {
+    setPlayers(newPlayers);
+    if (typeof window !== "undefined") {
+      localStorage.setItem("players", JSON.stringify(newPlayers));
+    }
+  };
+
+  const filteredPlayers = players.filter((player: Player) => {
     const matchesSearch =
       player.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
       player.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -52,17 +74,24 @@ export default function PlayerManagement() {
 
   const handleSavePlayer = () => {
     if (editingPlayer) {
-      setPlayers(players.map((p) => (p.id === editingPlayer.id ? editingPlayer : p)))
-      setIsEditDialogOpen(false)
-      setEditingPlayer(null)
+  const updated = players.map((p: Player) => (p.id === editingPlayer.id ? editingPlayer : p));
+      persistPlayers(updated);
+      setIsEditDialogOpen(false);
+      setEditingPlayer(null);
     }
-  }
+  };
 
   const handleDeletePlayer = (playerId: number) => {
     if (confirm("Are you sure you want to delete this player?")) {
-      setPlayers(players.filter((p) => p.id !== playerId))
+  const updated = players.filter((p: Player) => p.id !== playerId);
+      persistPlayers(updated);
     }
-  }
+  };
+
+  // Refresh button to reload from mockData
+  const handleRefresh = () => {
+    persistPlayers(mockPlayers);
+  };
 
   const getStatusColor = (status: string) => {
     switch (status) {
@@ -94,8 +123,12 @@ export default function PlayerManagement() {
     }
   }
 
-  const activePlayersCount = players.filter((p) => p.status === "Active").length
-  const injuredPlayersCount = players.filter((p) => p.status === "Injured").length
+  const activePlayersCount = players.filter((p: Player) => p.status === "Active").length;
+  const injuredPlayersCount = players.filter((p: Player) => p.status === "Injured").length;
+  const suspendedPlayersCount = players.filter((p: Player) => p.status === "Suspended").length;
+  const transferredPlayersCount = players.filter((p: Player) => p.status === "Transferred").length;
+  const fitPlayersCount = players.filter((p: Player) => p.medicalStatus === "Fit").length;
+  const notFitPlayersCount = players.filter((p: Player) => p.medicalStatus !== "Fit").length;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-background via-muted/20 to-background">
@@ -107,12 +140,24 @@ export default function PlayerManagement() {
               <h1 className="text-3xl font-bold text-foreground">Player Management</h1>
               <p className="text-muted-foreground mt-1">Manage player profiles, statistics, and team assignments</p>
             </div>
-            <div className="flex items-center space-x-4">
+            <div className="flex flex-wrap items-center gap-2">
               <Badge variant="outline" className="bg-green-100 text-green-800 border-green-200">
                 {activePlayersCount} Active
               </Badge>
               <Badge variant="outline" className="bg-red-100 text-red-800 border-red-200">
                 {injuredPlayersCount} Injured
+              </Badge>
+              <Badge variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-200">
+                {suspendedPlayersCount} Suspended
+              </Badge>
+              <Badge variant="outline" className="bg-blue-100 text-blue-800 border-blue-200">
+                {transferredPlayersCount} Transferred
+              </Badge>
+              <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                {fitPlayersCount} Fit
+              </Badge>
+              <Badge variant="outline" className="bg-red-50 text-red-700 border-red-200">
+                {notFitPlayersCount} Not Fit
               </Badge>
               <Link href="/admin/dashboard">
                 <Button variant="outline">Back to Dashboard</Button>
@@ -182,7 +227,7 @@ export default function PlayerManagement() {
 
         {/* Players Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
-          {filteredPlayers.map((player) => (
+          {filteredPlayers.map((player: Player) => (
             <Card key={player.id} className="bg-card/50 backdrop-blur-sm hover:shadow-lg transition-all duration-300">
               <CardHeader>
                 <div className="flex items-start justify-between">
@@ -322,7 +367,9 @@ export default function PlayerManagement() {
                     </div>
                     <div>
                       <Label className="text-sm font-medium">Emergency Contact</Label>
-                      <p className="text-sm text-muted-foreground">{selectedPlayer.emergencyContact}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {selectedPlayer.emergencyContact?.name} ({selectedPlayer.emergencyContact?.phone})
+                      </p>
                     </div>
                   </div>
                 </div>
@@ -418,7 +465,7 @@ export default function PlayerManagement() {
                 <div>
                   <Label className="text-sm font-medium">Previous Clubs</Label>
                   <div className="flex flex-wrap gap-2 mt-1">
-                    {selectedPlayer.previousClubs.map((club: string, index: number) => (
+                    {(selectedPlayer.previousClubs || []).map((club: string, index: number) => (
                       <Badge key={index} variant="outline" className="bg-muted/50">
                         {club}
                       </Badge>
@@ -428,7 +475,7 @@ export default function PlayerManagement() {
                 <div>
                   <Label className="text-sm font-medium">Achievements</Label>
                   <div className="flex flex-wrap gap-2 mt-1">
-                    {selectedPlayer.achievements.map((achievement: string, index: number) => (
+                    {(selectedPlayer.achievements || []).map((achievement: string, index: number) => (
                       <Badge key={index} variant="outline" className="bg-yellow-100 text-yellow-800 border-yellow-200">
                         {achievement}
                       </Badge>
@@ -454,7 +501,7 @@ export default function PlayerManagement() {
                   <Label htmlFor="name">Name</Label>
                   <Input
                     id="name"
-                    value={editingPlayer.name}
+                    value={editingPlayer.name ?? ""}
                     onChange={(e) => setEditingPlayer({ ...editingPlayer, name: e.target.value })}
                   />
                 </div>
@@ -463,7 +510,7 @@ export default function PlayerManagement() {
                   <Input
                     id="email"
                     type="email"
-                    value={editingPlayer.email}
+                    value={editingPlayer.email ?? ""}
                     onChange={(e) => setEditingPlayer({ ...editingPlayer, email: e.target.value })}
                   />
                 </div>
@@ -471,7 +518,7 @@ export default function PlayerManagement() {
                   <Label htmlFor="phone">Phone</Label>
                   <Input
                     id="phone"
-                    value={editingPlayer.phone}
+                    value={editingPlayer.phone ?? ""}
                     onChange={(e) => setEditingPlayer({ ...editingPlayer, phone: e.target.value })}
                   />
                 </div>
@@ -480,7 +527,7 @@ export default function PlayerManagement() {
                   <Input
                     id="jerseyNumber"
                     type="number"
-                    value={editingPlayer.jerseyNumber}
+                    value={editingPlayer.jerseyNumber ?? ""}
                     onChange={(e) =>
                       setEditingPlayer({ ...editingPlayer, jerseyNumber: Number.parseInt(e.target.value) })
                     }
@@ -489,7 +536,7 @@ export default function PlayerManagement() {
                 <div>
                   <Label htmlFor="position">Position</Label>
                   <Select
-                    value={editingPlayer.position}
+                    value={editingPlayer.position ?? ""}
                     onValueChange={(value) => setEditingPlayer({ ...editingPlayer, position: value })}
                   >
                     <SelectTrigger>
@@ -506,7 +553,7 @@ export default function PlayerManagement() {
                 <div>
                   <Label htmlFor="status">Status</Label>
                   <Select
-                    value={editingPlayer.status}
+                    value={editingPlayer.status ?? ""}
                     onValueChange={(value) => setEditingPlayer({ ...editingPlayer, status: value })}
                   >
                     <SelectTrigger>
@@ -525,7 +572,7 @@ export default function PlayerManagement() {
                 <Label htmlFor="medicalStatus">Medical Status</Label>
                 <Input
                   id="medicalStatus"
-                  value={editingPlayer.medicalStatus}
+                  value={editingPlayer.medicalStatus ?? ""}
                   onChange={(e) => setEditingPlayer({ ...editingPlayer, medicalStatus: e.target.value })}
                 />
               </div>

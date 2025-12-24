@@ -1,0 +1,8 @@
+{
+  "/home/page": "app/home/page.js",
+  "/fixtures/page": "app/fixtures/page.js",
+  "/login/page": "app/login/page.js",
+  "/admin/dashboard/page": "app/admin/dashboard/page.js",
+  "/admin/venues/page": "app/admin/venues/page.js",
+  "/admin/players/page": "app/admin/players/page.js"
+}

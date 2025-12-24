@@ -59,6 +59,15 @@ export interface BasePlayer {
     name: string
     phone: string
   }
+  status: "Active" | "Injured" | "Suspended" | "Transferred"
+  rating: number
+  matchesPlayed: number
+  medicalStatus: string
+  preferredFoot: string
+  league: string
+  contractExpiry: string
+  previousClubs: string[]
+  achievements: string[]
 }
 
 
@@ -173,7 +182,16 @@ export const mockPlayers: Player[] = [
     medicalNotes: "Minor ankle sprain, recovering well.",
     email: "john.doe@nwu.edu",
     phone: "+27 82 123 4567",
-    emergencyContact: { name: "Jane Doe", phone: "+27 82 765 4321" }
+    emergencyContact: { name: "Jane Doe", phone: "+27 82 765 4321" },
+    status: "Active",
+    rating: 88,
+    matchesPlayed: 17,
+    medicalStatus: "Fit",
+    preferredFoot: "Right",
+    league: "Varsity League",
+    contractExpiry: "2026-06-30",
+    previousClubs: ["Youth Academy", "NWU Juniors"],
+    achievements: ["Top Scorer 2024", "Player of the Month"]
   },
   {
     id: 2,
@@ -198,7 +216,16 @@ export const mockPlayers: Player[] = [
     medicalNotes: "No current injuries.",
     email: "mike.smith@wits.ac.za",
     phone: "+27 83 234 5678",
-    emergencyContact: { name: "Sarah Smith", phone: "+27 83 876 5432" }
+    emergencyContact: { name: "Sarah Smith", phone: "+27 83 876 5432" },
+    status: "Injured",
+    rating: 85,
+    matchesPlayed: 18,
+    medicalStatus: "Injured",
+    preferredFoot: "Left",
+    league: "Varsity League",
+    contractExpiry: "2025-12-31",
+    previousClubs: ["Local Club FC", "Wits Youth"],
+    achievements: ["Best Midfielder 2024"]
   },
   {
     id: 3,
@@ -223,7 +250,16 @@ export const mockPlayers: Player[] = [
     medicalNotes: "Recovered from knee surgery last season.",
     email: "david.johnson@uct.ac.za",
     phone: "+27 84 345 6789",
-    emergencyContact: { name: "Mary Johnson", phone: "+27 84 987 6543" }
+    emergencyContact: { name: "Mary Johnson", phone: "+27 84 987 6543" },
+    status: "Active",
+    rating: 82,
+    matchesPlayed: 16,
+    medicalStatus: "Fit",
+    preferredFoot: "Right",
+    league: "Varsity League",
+    contractExpiry: "2026-06-30",
+    previousClubs: ["Lagos United", "UCT Youth"],
+    achievements: ["Golden Boot 2023"]
   },
   {
     id: 4,
@@ -248,7 +284,16 @@ export const mockPlayers: Player[] = [
     medicalNotes: "Mild back pain, under physiotherapy.",
     email: "alex.wilson@up.ac.za",
     phone: "+27 85 456 7890",
-    emergencyContact: { name: "Laura Wilson", phone: "+27 85 098 7654" }
+    emergencyContact: { name: "Laura Wilson", phone: "+27 85 098 7654" },
+    status: "Suspended",
+    rating: 80,
+    matchesPlayed: 18,
+    medicalStatus: "Injured",
+    preferredFoot: "Left",
+    league: "Varsity League",
+    contractExpiry: "2025-12-31",
+    previousClubs: ["Pretoria FC", "UP Youth"],
+    achievements: ["Best Defender 2024"]
   },
   {
     id: 5,
